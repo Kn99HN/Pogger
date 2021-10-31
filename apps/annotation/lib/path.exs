@@ -18,12 +18,20 @@ end
 defmodule Annotation.Task do
   
   alias __MODULE__
-  @enforce_keys [:name, :timestamp]
+  @enforce_keys [:name, :timestamp, :type]
   defstruct(
-    name: name,
+    name: nil,
     timestamp: nil,
-    task: nil
+    ttype: nil,
   )
+
+  def init(name, timestamp, type) do
+    %Task{
+      name: name,
+      timestamp: timestamp,
+      type: type
+    }
+  end
 end
 
 defmodule Annotation.Notice do
@@ -33,15 +41,33 @@ defmodule Annotation.Notice do
     name: nil,
     timestamp: nil
   )
+
+  def init(name, timestamp) do
+    %Notice{
+      name: name,
+      timestamp: timestamp
+    }
+  end
 end
 
 defmodule Annotation.Message do
   alias __MODULE__
   @enforce_keys [:message_type, :message_id, :message_size, :timestamp]
   defstruct(
-    name: nil,
+    message_type: nil,
+    message_id: nil,
+    message_size: nil,
     timestamp: nil,
   )
+
+  def init(message_type, message_id, message_size, timestamp) do
+    %Message{
+      message_type: message_type,
+      message_id: message_id,
+      message_size: message_size,
+      timestamp: timestamp
+    }
+  end
 end
 
 defmodule Annotation.TimeStamp do
@@ -52,4 +78,12 @@ defmodule Annotation.TimeStamp do
     path_id: nil,
     clock_value: nil
   )
+
+  def init(process_name, path_id, clock_value) do
+    %TimeStamp{
+      process_name: process_name,
+      path_id: path_id,
+      clock_value: clock_value
+    }
+  end
 end
