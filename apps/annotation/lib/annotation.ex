@@ -18,7 +18,7 @@ defmodule Annotation do
       :exit, _ -> true
     end
     
-    Agent.start_link(fn -> Path.init(path_id) end, name: context_name)
+    Agent.start_link(fn -> Annotation.Path.init(path_id) end, name: context_name)
   end
 
   def terminate do
@@ -41,7 +41,7 @@ defmodule Annotation do
 
   def annotate_start_task(tname, clock_value) do
     timestamp = get_timestamp(clock_value)
-    task = Task.init(
+    task = Annotation.Task.init(
       tname,
       timestamp,
       :tstart
@@ -52,7 +52,7 @@ defmodule Annotation do
 
   def annotate_end_task(tname, clock_value) do
     timestamp = get_timestamp(clock_value)
-    task = Task.init(
+    task = Annotation.Task.init(
       tname,
       timestamp,
       :tend
@@ -63,7 +63,7 @@ defmodule Annotation do
 
   def annotate_notice(name, clock_value) do
     timestamp = get_timestamp(clock_value)
-    notice = Notice.init(
+    notice = Annotation.Notice.init(
       name,
       timestamp: timestamp
     )
@@ -73,7 +73,7 @@ defmodule Annotation do
 
   def annotate_send(message_id, message_size, clock_value) do
     timestamp = get_timestamp(clock_value)
-    send_msg = Message.init(
+    send_msg = Annotation.Message.init(
       :send,
       message_id,
       message_size,
@@ -85,7 +85,7 @@ defmodule Annotation do
 
   def annotate_receive(message_id, message_size, clock_value) do
     timestamp = get_timestamp(clock_value)
-    received_msg = Message.init(
+    received_msg = Annotation.Message.init(
       :receive,
       message_id,
       message_size,
@@ -123,13 +123,12 @@ defmodule Annotation do
   end
 
   def get_context do
-    hostname = whoami()
-    "#{hostname} anno_context"
+    :anno_context
   end
 
   defp get_timestamp(clock_value) do
-    TimeStamp.init(
-      whoami(),
+    Annotation.TimeStamp.init(
+      :a,
       get_path_name(),
       clock_value
     )
