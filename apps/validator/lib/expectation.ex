@@ -1,61 +1,35 @@
-defmodule Expectation.Notice do
+defmodule Validator.Notice do
   alias __MODULE__
 
   @enforce_keys [:pattern]
-  defstruct(pattern) do
-    %Notice{
-      pattern: pattern
-    }
-  end
+  defstruct(pattern: nil)
 end
 
-defmodule Expectation.Send do
+defmodule Validator.Send do
   alias __MODULE__
   
   @enforce_keys [:pname]
-  defstruct(pname, size) do
-    %Send{
-      pname: pname,
-      size: size
-    }
-  end
+  defstruct(pname: nil)
 end
 
-defmodule Expectation.Receive do
+defmodule Validator.Receive do
   alias __MODULE__
 
   @enforce_keys [:pname]
-  defstruct(pname, size) do
-    %Receive{
-      pname: pname,
-      size: size
-    }
-  end
+  defstruct(pname: nil)
 end
 
-defmodule Expectation.Task do
+defmodule Validator.Task do
   alias __MODULE__
 
   @enforce_keys [:tname]
-  defstruct(tname, ttype) do
-    %Task{
-      tname: tname,
-      ttype: ttype,
-      subtasks: []
-    }
-  end
+  defstruct(tname: nil, subtasks: [])
 end
 
-defmodule Expectation.Repeat do
+defmodule Validator.Repeat do
   alias __MODULE__
 
   # Maybe is a Repeat from 0 to 1
-  @enforce_keys [:low, :high, :statement]
-  defstruct(low, high, statement) do
-    %Repeat{
-      low: low,
-      high: high,
-      statement: statement
-    }
-  end
+  @enforce_keys [:low, :high]
+  defstruct(low: 0, high: 1, statements: [])
 end
