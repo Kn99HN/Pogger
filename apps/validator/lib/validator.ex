@@ -48,8 +48,11 @@ defmodule Validator do
     }
   end
 
-  def is_statment(s) do
-    String.starts_with?(s, ["task", "maybe", "repeat"])
+  def parse_recognizer(s) do
+    validator_name = get_pattern_from_expectation(s)
+    %Validator.Recognizer{
+      name: validator_name
+    }
   end
 
   defp find_indexes(tokens, index, ls) do
@@ -73,7 +76,24 @@ defmodule Validator do
     end
   end
 
-  defp parse_tokens(tokens, expectations) do
+  defp parse_recognizer(tokens, recognizer) do
+    if length(tokens) == 0 do
+      recognizer
+    else
+      case find_indexes(tokens, 0, []) do
+        {low, high} ->
+          process_str = Enum.at(tokens, 0)
+          process_name = get_pattern_from_expectation(process_str)
+          process_expectations_str = Enum.slice(tokens, low + 1..high - 1)
+          process_expectations = parse_tokens(Enum.slice(tokens, low + 1..high - 1), [])
+          recognizer = %{recognizer | map: Map.put(recognizer.map, process_name, process_expectations)}
+          parse_recognizer(Enum.slice(tokens, high+1..length(tokens)), recognizer)
+        true -> recognizer
+      end
+    end
+  end
+
+  def parse_tokens(tokens, expectations) do
     case find_indexes(tokens, 0, []) do
       {low, high} ->
        case tokens do
@@ -140,12 +160,23 @@ defmodule Validator do
     end
   end
 
+  def prepare_validator(s) do
+    String.split(s, "\n") |> Enum.map(fn str -> String.trim(str) end) |> Enum.filter(fn s -> s != "" end)
+  end
+
   def parse_validator(s) do
-    strs = String.split(s, "\n") |> Enum.map(fn str -> String.trim(str) end) |> Enum.filter(fn s -> s != "" end)
+    strs = prepare_validator(s)
     tokens = tokenizer(strs, 0, [])
-    validator = Enum.at(strs, 0)
     parsed_validator = parse_tokens(tokens, [])
     parsed_validator
+  end
+
+  def parse_validator_to_recognizer(s) do
+    strs = prepare_validator(s)
+    validator = Enum.at(strs, 0)
+    tokens = tokenizer(Enum.slice(strs, 1..length(strs) - 2), 0, [])
+    recognizer = parse_recognizer(validator)
+    parse_recognizer(tokens, recognizer)
   end
   
   defp get_file_path do

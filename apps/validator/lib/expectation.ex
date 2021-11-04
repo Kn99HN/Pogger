@@ -1,3 +1,9 @@
+defmodule Validator.Recognizer do
+  alias __MODULE__
+
+  defstruct(name: nil, map: Map.new())
+end
+
 defmodule Validator.Notice do
   alias __MODULE__
 
