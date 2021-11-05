@@ -31,7 +31,6 @@ defmodule Annotation.Task do
     %Task{
       name: name,
       timestamp: timestamp,
-
       ttype: ttype
     }
   end

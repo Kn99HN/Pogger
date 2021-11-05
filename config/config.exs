@@ -23,5 +23,13 @@ config :git_hooks,
       tasks: [
         {:cmd, "mix format --check-formatted"}
       ]
-    ]
+    ],
+    pre_push: [
+        verbose: false,
+        tasks: [
+          {:cmd, "mix dialyzer"},
+          {:cmd, "mix test --color"},
+          {:cmd, "echo 'success!'"}
+        ]
+      ]
   ]
