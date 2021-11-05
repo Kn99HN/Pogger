@@ -18,16 +18,16 @@ defmodule ValidatorTest do
       }"
 
     target1 = %Validator.Task{
-      tname: "A",
-      subtasks: [
+      name: "A",
+      statements: [
         %Validator.Repeat{
           low: 0,
           high: 1,
           statements: [%Validator.Notice{pattern: "B"}]
         },
         %Validator.Task{
-          tname: "A2",
-          subtasks: [%Validator.Notice{pattern: "D"}]
+          name: "A2",
+          statements: [%Validator.Notice{pattern: "D"}]
         }
       ]
     }
@@ -48,8 +48,8 @@ defmodule ValidatorTest do
     "
 
     target2 = %Validator.Task{
-      tname: "A",
-      subtasks: [
+      name: "A",
+      statements: [
         %Validator.Repeat{
           low: 0,
           high: 1,
@@ -61,8 +61,8 @@ defmodule ValidatorTest do
               pattern: "C"
             },
             %Validator.Task{
-              tname: "D",
-              subtasks: [
+              name: "D",
+              statements: [
                 %Validator.Notice{
                   pattern: "E"
                 }
@@ -87,16 +87,16 @@ defmodule ValidatorTest do
 
     target3 = [
       %Validator.Task{
-        tname: "A",
-        subtasks: [
+        name: "A",
+        statements: [
           %Validator.Notice{
             pattern: "B"
           }
         ]
       },
       %Validator.Task{
-        tname: "C",
-        subtasks: [
+        name: "C",
+        statements: [
           %Validator.Notice{
             pattern: "D"
           }
@@ -121,7 +121,7 @@ defmodule ValidatorTest do
       send(A)
     "
     target2 = %Validator.Send{
-      pname: "A"
+      name: "A"
     }
     res2 = Validator.parse_validator(str2)
 
@@ -129,7 +129,7 @@ defmodule ValidatorTest do
       receive(A)
     "
     target3 = %Validator.Receive{
-      pname: "A"
+      name: "A"
     }
     res3 = Validator.parse_validator(str3)
 

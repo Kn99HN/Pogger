@@ -48,16 +48,16 @@ defmodule RecognizerTest do
       map: %{
         "A" => [
           %Validator.Task{
-            tname: "B",
-            subtasks: [
+            name: "B",
+            statements: [
               %Validator.Notice{
                 pattern: "C"
               },
             ]
           },
           %Validator.Task{
-            tname: "C",
-            subtasks: [
+            name: "C",
+            statements: [
               %Validator.Notice{
                 pattern: "D"
               }

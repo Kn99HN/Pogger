@@ -1,5 +1,4 @@
 defmodule Validator do
-  
   def get_pattern_from_expectation(s) do
     Regex.run(~r/\((.*?]*)\)/, s) |> Enum.at(1)
   end
@@ -14,21 +13,21 @@ defmodule Validator do
   def parse_send(s) do
     sent_process = get_pattern_from_expectation(s)
     %Validator.Send{
-      pname: sent_process,
+      name: sent_process,
     }
   end
 
   def parse_receive(s) do
     received_process = get_pattern_from_expectation(s)
     %Validator.Receive{
-      pname: received_process
+      name: received_process
     }
   end
 
   def parse_task(s) do
     task_name = get_pattern_from_expectation(s)
     %Validator.Task{
-      tname: task_name
+      name: task_name
     }
   end
 
@@ -61,10 +60,8 @@ defmodule Validator do
     else
       curr = Enum.at(tokens, index)
       {char, idx} = Enum.at(ls, 0, {"", 0})
-      IO.puts("#{inspect(curr)}-#{inspect(char)}-#{inspect(index)}")
       cond do
         curr == "}" and char == "{"  ->
-          IO.puts("Ls:   #{inspect(ls)}")
           if Enum.slice(ls, 1..length(ls)) == [] do
             {idx, index}
           else
@@ -91,7 +88,6 @@ defmodule Validator do
           recognizer = %{recognizer | map: Map.put(recognizer.map, process_name, process_expectations)}
           parse_recognizer(Enum.slice(tokens, high+1..length(tokens)), recognizer)
         nil -> 
-          IO.puts("#{inspect(tokens)}")
           recognizer
       end
     end
@@ -107,7 +103,7 @@ defmodule Validator do
            cond do
               String.starts_with?(head, "task") ->
                 task = parse_task(head)
-                task = %{task | subtasks: parse_tokens(new_tokens, expectations)}
+                task = %{task | statements: parse_tokens(new_tokens, expectations)}
                 [task] ++ parse_tokens(other_tokens, expectations)
               String.starts_with?(head, "maybe") ->
                 maybe = parse_maybe(head)

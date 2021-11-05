@@ -14,22 +14,22 @@ end
 defmodule Validator.Send do
   alias __MODULE__
   
-  @enforce_keys [:pname]
-  defstruct(pname: nil)
+  @enforce_keys [:name]
+  defstruct(name: nil)
 end
 
 defmodule Validator.Receive do
   alias __MODULE__
 
-  @enforce_keys [:pname]
-  defstruct(pname: nil)
+  @enforce_keys [:name]
+  defstruct(name: nil)
 end
 
 defmodule Validator.Task do
   alias __MODULE__
 
-  @enforce_keys [:tname]
-  defstruct(tname: nil, subtasks: [])
+  @enforce_keys [:name]
+  defstruct(name: nil, statements: [])
 end
 
 defmodule Validator.Repeat do
