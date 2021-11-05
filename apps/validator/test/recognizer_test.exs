@@ -1,11 +1,6 @@
 defmodule RecognizerTest do
   use ExUnit.Case
 
-  import Kernel,
-    except: [spawn: 3, spawn: 1, spawn_link: 1, spawn_link: 3, send: 2]
-
-  import Emulation, only: [spawn: 2, send: 2]
-
   test "basic recognizer" do
     str1 = "
       validator(V) {
@@ -110,7 +105,7 @@ defmodule RecognizerTest do
       }
     }
 
-    res1= Validator.to_recognizer(str1)
+    res1 = Validator.to_recognizer(str1)
 
     assert res1 == target1
   end

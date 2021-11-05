@@ -4,34 +4,26 @@ defmodule Validator do
   end
 
   defp parse_notice(s) do
-    notice_pattern = get_pattern_from_expectation(s)
-
     %Validator.Notice{
-      pattern: notice_pattern
+      pattern: get_pattern_from_expectation(s)
     }
   end
 
   defp parse_send(s) do
-    sent_process = get_pattern_from_expectation(s)
-
     %Validator.Send{
-      name: sent_process
+      name: get_pattern_from_expectation(s)
     }
   end
 
   defp parse_receive(s) do
-    received_process = get_pattern_from_expectation(s)
-
     %Validator.Receive{
-      name: received_process
+      name: get_pattern_from_expectation(s)
     }
   end
 
   defp parse_task(s) do
-    task_name = get_pattern_from_expectation(s)
-
     %Validator.Task{
-      name: task_name
+      name: get_pattern_from_expectation(s)
     }
   end
 
@@ -52,10 +44,8 @@ defmodule Validator do
   end
 
   defp parse_recognizer(s) do
-    validator_name = get_pattern_from_expectation(s)
-
     %Validator.Recognizer{
-      name: validator_name
+      name: get_pattern_from_expectation(s)
     }
   end
 
@@ -68,10 +58,9 @@ defmodule Validator do
 
       cond do
         curr == "}" and char == "{" ->
-          if Enum.slice(ls, 1..length(ls)) == [] do
-            {idx, index}
-          else
-            find_indexes(tokens, index + 1, Enum.slice(ls, 1..length(ls)))
+          case Enum.slice(ls, 1..length(ls)) do
+            [] -> {idx, index}
+            inner_ls -> find_indexes(tokens, index + 1, inner_ls)
           end
 
         curr == "{" ->
@@ -96,26 +85,28 @@ defmodule Validator do
   """
   @spec parse_recognizer([any()], %Validator.Recognizer{}) :: %Validator.Recognizer{}
   defp parse_recognizer(tokens, recognizer) do
-    if length(tokens) == 0 do
-      recognizer
-    else
-      case find_indexes(tokens, 0, []) do
-        {low, high} ->
-          process_str = Enum.at(tokens, 0)
-          process_name = get_pattern_from_expectation(process_str)
-          process_expectations_str = Enum.slice(tokens, (low + 1)..(high - 1))
-          process_expectations = parse_tokens(process_expectations_str, [])
+    case tokens do
+      [] ->
+        recognizer
 
-          recognizer = %{
+      tokens ->
+        case find_indexes(tokens, 0, []) do
+          {low, high} ->
+            process_str = Enum.at(tokens, 0)
+            process_name = get_pattern_from_expectation(process_str)
+            process_expectations_str = Enum.slice(tokens, (low + 1)..(high - 1))
+            process_expectations = parse_tokens(process_expectations_str, [])
+
+            recognizer = %{
+              recognizer
+              | map: Map.put(recognizer.map, process_name, process_expectations)
+            }
+
+            parse_recognizer(Enum.slice(tokens, (high + 1)..length(tokens)), recognizer)
+
+          nil ->
             recognizer
-            | map: Map.put(recognizer.map, process_name, process_expectations)
-          }
-
-          parse_recognizer(Enum.slice(tokens, (high + 1)..length(tokens)), recognizer)
-
-        nil ->
-          recognizer
-      end
+        end
     end
   end
 
