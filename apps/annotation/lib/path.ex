@@ -17,7 +17,6 @@ defmodule Annotation.Path do
 end
 
 defmodule Annotation.Task do
-  
   alias __MODULE__
 
   @derive Jason.Encoder
@@ -25,13 +24,14 @@ defmodule Annotation.Task do
   defstruct(
     name: nil,
     timestamp: nil,
-    ttype: nil,
+    ttype: nil
   )
 
   def init(name, timestamp, ttype) do
     %Task{
       name: name,
       timestamp: timestamp,
+
       ttype: ttype
     }
   end
@@ -64,7 +64,7 @@ defmodule Annotation.Message do
     message_type: nil,
     message_id: nil,
     message_size: nil,
-    timestamp: nil,
+    timestamp: nil
   )
 
   def init(message_type, message_id, message_size, timestamp) do

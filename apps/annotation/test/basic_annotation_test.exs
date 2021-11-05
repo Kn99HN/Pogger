@@ -23,9 +23,9 @@ defmodule BasicAnnotationTest do
     msg = "Hello world!"
     Annotation.annotate_send("c:send", byte_size(msg), 1)
     send(self(), msg)
+
     receive do
-      {_, _, received_m}
-        -> 
+      {_, _, received_m} ->
         Annotation.annotate_receive("c:receive", byte_size(received_m), 2)
         send(caller, :done)
     end
@@ -41,7 +41,6 @@ defmodule BasicAnnotationTest do
     receive do
       :done -> true
     end
-
   after
     Emulation.terminate()
   end
