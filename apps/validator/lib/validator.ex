@@ -61,8 +61,10 @@ defmodule Validator do
     else
       curr = Enum.at(tokens, index)
       {char, idx} = Enum.at(ls, 0, {"", 0})
+      IO.puts("#{inspect(curr)}-#{inspect(char)}-#{inspect(index)}")
       cond do
         curr == "}" and char == "{"  ->
+          IO.puts("Ls:   #{inspect(ls)}")
           if Enum.slice(ls, 1..length(ls)) == [] do
             {idx, index}
           else
@@ -88,7 +90,9 @@ defmodule Validator do
           process_expectations = parse_tokens(Enum.slice(tokens, low + 1..high - 1), [])
           recognizer = %{recognizer | map: Map.put(recognizer.map, process_name, process_expectations)}
           parse_recognizer(Enum.slice(tokens, high+1..length(tokens)), recognizer)
-        true -> recognizer
+        nil -> 
+          IO.puts("#{inspect(tokens)}")
+          recognizer
       end
     end
   end
@@ -153,8 +157,7 @@ defmodule Validator do
     else
       line = Enum.at(strs, index)
       lines = String.split(line, " ")
-        |> Enum.map(fn s -> String.replace(s, ":", "") end)
-        |> Enum.map(fn s -> String.replace(s, ";", "") end)
+        |> Enum.map(fn s -> String.replace(s, [":", ",", ";"], "") end)
         |> Enum.filter(fn s -> s != nil and s != " " and s != "" and s != "between" and s != "and" end)
       tokenizer(strs, index + 1, tokens ++ lines)
     end
