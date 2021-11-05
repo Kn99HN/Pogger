@@ -32,7 +32,7 @@ defmodule ValidatorTest do
       ]
     }
 
-    res = Validator.parse_validator(str1)
+    res = Validator.to_validator(str1)
     assert res == [target1]
 
     str2 = "
@@ -73,7 +73,7 @@ defmodule ValidatorTest do
       ]
     }
 
-    res2 = Validator.parse_validator(str2)
+    res2 = Validator.to_validator(str2)
     assert res2 == [target2]
 
     str3 = "
@@ -103,7 +103,8 @@ defmodule ValidatorTest do
         ]
       }
     ]
-    res3 = Validator.parse_validator(str3)
+
+    res3 = Validator.to_validator(str3)
     assert res3 == target3
   end
 
@@ -111,27 +112,32 @@ defmodule ValidatorTest do
     str1 = "
       notice(A)
     "
+
     target1 = %Validator.Notice{
       pattern: "A"
     }
-    res1 = Validator.parse_validator(str1)
 
+    res1 = Validator.to_validator(str1)
 
     str2 = "
       send(A)
     "
+
     target2 = %Validator.Send{
       name: "A"
     }
-    res2 = Validator.parse_validator(str2)
+
+    res2 = Validator.to_validator(str2)
 
     str3 = "
       receive(A)
     "
+
     target3 = %Validator.Receive{
       name: "A"
     }
-    res3 = Validator.parse_validator(str3)
+
+    res3 = Validator.to_validator(str3)
 
     assert res1 == [target1]
     assert res2 == [target2]
@@ -145,6 +151,7 @@ defmodule ValidatorTest do
         notice(B);
       }
     "
+
     target1 = %Validator.Repeat{
       low: 1,
       high: 10,
@@ -157,8 +164,9 @@ defmodule ValidatorTest do
         }
       ]
     }
-    res1 = Validator.parse_validator(str1)
-    
+
+    res1 = Validator.to_validator(str1)
+
     assert res1 == [target1]
   end
 
@@ -169,13 +177,14 @@ defmodule ValidatorTest do
         notice(B);
       }
     "
+
     target1 = %Validator.Repeat{
       low: 0,
       high: 1,
       statements: [%Validator.Notice{pattern: "A"}, %Validator.Notice{pattern: "B"}]
     }
 
-    res1 = Validator.parse_validator(str1)
+    res1 = Validator.to_validator(str1)
 
     assert res1 == [target1]
   end

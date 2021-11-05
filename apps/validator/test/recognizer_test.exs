@@ -14,23 +14,24 @@ defmodule RecognizerTest do
         }
       }
     "
-    target1 = %Validator.Recognizer{
-     name: "V",
-     map: %{
-       "A" => [
-        %Validator.Notice{
-          pattern: "A"
-        }
-       ]
-     }
-    }
-    res1 = Validator.parse_validator_to_recognizer(str1)
 
+    target1 = %Validator.Recognizer{
+      name: "V",
+      map: %{
+        "A" => [
+          %Validator.Notice{
+            pattern: "A"
+          }
+        ]
+      }
+    }
+
+    res1 = Validator.to_recognizer(str1)
 
     assert res1 == target1
   end
 
-  test "recognizer with nested" do
+  test "recognizer with nested statements" do
     str1 = "
       Validator(V) {
         process(A): {
@@ -43,6 +44,7 @@ defmodule RecognizerTest do
         }
       }
     "
+
     target1 = %Validator.Recognizer{
       name: "V",
       map: %{
@@ -52,7 +54,7 @@ defmodule RecognizerTest do
             statements: [
               %Validator.Notice{
                 pattern: "C"
-              },
+              }
             ]
           },
           %Validator.Task{
@@ -67,8 +69,49 @@ defmodule RecognizerTest do
       }
     }
 
-    res1 = Validator.parse_validator_to_recognizer(str1)
+    res1 = Validator.to_recognizer(str1)
 
     assert res1 == target1
   end
- end
+
+  test "recognizer with multiple process" do
+    str1 = "
+      Validator(V) {
+        process(A): {
+          notice(B);
+          notice(C);
+        },
+        process(B): {
+          notice(C);
+          notice(D);
+        }
+      }
+    "
+
+    target1 = %Validator.Recognizer{
+      name: "V",
+      map: %{
+        "A" => [
+          %Validator.Notice{
+            pattern: "B"
+          },
+          %Validator.Notice{
+            pattern: "C"
+          }
+        ],
+        "B" => [
+          %Validator.Notice{
+            pattern: "C"
+          },
+          %Validator.Notice{
+            pattern: "D"
+          }
+        ]
+      }
+    }
+
+    res1= Validator.to_recognizer(str1)
+
+    assert res1 == target1
+  end
+end

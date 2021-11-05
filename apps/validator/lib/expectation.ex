@@ -13,7 +13,7 @@ end
 
 defmodule Validator.Send do
   alias __MODULE__
-  
+
   @enforce_keys [:name]
   defstruct(name: nil)
 end
