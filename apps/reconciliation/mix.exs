@@ -25,7 +25,8 @@ defmodule Reconciliation.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:emulation, in_umbrella: true}
+      {:emulation, in_umbrella: true},
+      {:libgraph, "~> 0.13"}
     ]
   end
 end
