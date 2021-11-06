@@ -14,15 +14,6 @@ defmodule CS3033Emu.MixProject do
       deps: deps(),
       dializer: [
         plt_add_deps: :apps_direct
-      ],
-      # Docs
-      name: "CS2621 Emulator",
-      source_url:
-        "https://github.com/nyu-distributed-systems/fa20-lab1-code/tree/master/apps/emulation",
-      homepage_url: "https://cs.nyu.edu/~apanda/classes/fa20/emdocs/",
-      docs: [
-        # The main page in the docs
-        main: "Emulation"
       ]
     ]
   end
