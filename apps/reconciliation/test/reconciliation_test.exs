@@ -1,11 +1,6 @@
 defmodule ReconciliationTest do
   use ExUnit.Case
 
-  import Kernel,
-    except: [spawn: 3, spawn: 1, spawn_link: 1, spawn_link: 3, send: 2]
-
-  import Emulation, only: [spawn: 2, send: 2]
-
   defp test_get_trace_file_path() do
     case Reconciliation.get_file_path() do
       nil ->
@@ -94,6 +89,7 @@ defmodule ReconciliationTest do
   test "Combine trace file" do
     test_create_trace()
     fpath = "#{test_get_trace_file_path()}/test"
+    IO.puts("Test trace file output path: #{fpath}")
     trace_events = Reconciliation.combine_trace(fpath)
     assert length(trace_events) == 5
   end
