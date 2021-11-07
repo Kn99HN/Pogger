@@ -40,23 +40,27 @@ defmodule Reconciliation do
 
   defp create_trace_event(file_content) do
     path_id = Map.fetch!(file_content, "path_id")
-    events = Map.fetch!(file_content, "events")
-        |> Enum.map(fn x -> %Reconciliation.Event{
-            path_id: path_id,
-            event_type: check_event_type(x),
-            detail: x
-        } end)
+
+    events =
+      Map.fetch!(file_content, "events")
+      |> Enum.map(fn x ->
+        %Reconciliation.Event{
+          path_id: path_id,
+          event_type: check_event_type(x),
+          detail: x
+        }
+      end)
   end
 
   defp check_event_type(event) do
     if Map.has_key?(event, "ttype") do
-        :task
+      :task
     else
-        if Map.has_key?(event, "message_type") do
-            :message
-        else
-            :notice
-        end    
+      if Map.has_key?(event, "message_type") do
+        :message
+      else
+        :notice
+      end
     end
   end
 
@@ -86,72 +90,69 @@ defmodule Reconciliation do
 
     compare_result = Map.values(Map.merge(v1, v2, fn _k, c1, c2 -> compare_component(c1, c2) end))
 
-    if Enum.any?(compare_result, fn x -> x == @before end) do
-      if Enum.any?(compare_result, fn x -> x == @hafter end) do
+    cond do
+      Enum.any?(compare_result, fn x -> x == @before end) &&
+          Enum.any?(compare_result, fn x -> x == @hafter end) ->
         @concurrent
-      else
+
+      Enum.any?(compare_result, fn x -> x == @before end) ->
         @before
-      end
-    else
-      if Enum.any?(compare_result, fn x -> x == @hafter end) do
+
+      Enum.any?(compare_result, fn x -> x == @hafter end) ->
         @hafter
-      else
-        @concurrent
-      end
     end
   end
 
   defp get_timestamp(event) do
     %Reconciliation.Event{
-        path_id: path_id,
-        event_type: event_type,
-        detail: detail
+      path_id: path_id,
+      event_type: event_type,
+      detail: detail
     } = event
-    clock_val =
-      detail
-      |> Map.fetch!("timestamp")
-      |> Map.fetch!("clock_value")
+
+    detail
+    |> Map.fetch!("timestamp")
+    |> Map.fetch!("clock_value")
   end
 
   def trace_graph(events) do
-    g =
-      Graph.new()
-      |> update_vertices(events)
+    Graph.new()
+    |> update_vertices(events)
   end
 
   def update_vertices(g, events) do
-    if events == [] do
-      g
-    else
-      [head | tail] = events
-
-      g =
+    case events do
+      [] ->
         g
-        |> Graph.add_vertex(head)
-        |> Reconciliation.update_edge(head, tail)
 
-      update_vertices(g, tail)
+      [head | tail] ->
+        g =
+          g
+          |> Graph.add_vertex(head)
+          |> Reconciliation.update_edge(head, tail)
+
+        update_vertices(g, tail)
     end
   end
 
   def update_edge(g, event, events) do
-    if events == [] do
-      g
-    else
-      [head | tail] = events
+    case events do
+      [] ->
+        g
 
-      case compare_vclock(event, head) do
-        @before ->
-          g = g |> Graph.add_edge(Graph.Edge.new(event, head))
-          update_edge(g, event, tail)
+      [head | tail] ->
+        case compare_vclock(event, head) do
+          @before ->
+            g = g |> Graph.add_edge(Graph.Edge.new(event, head))
+            update_edge(g, event, tail)
 
-        @hafter ->
-          g = g |> Graph.add_edge(Graph.Edge.new(head, event))
-          update_edge(g, event, tail)
+          @hafter ->
+            g = g |> Graph.add_edge(Graph.Edge.new(head, event))
+            update_edge(g, event, tail)
 
-        @concurrent ->
-          update_edge(g, event, tail)
-      end
+          @concurrent ->
+            update_edge(g, event, tail)
+        end
     end
   end
 end
