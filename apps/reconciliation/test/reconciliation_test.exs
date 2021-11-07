@@ -4,10 +4,14 @@ defmodule ReconciliationTest do
   defp test_get_trace_file_path() do
     case Reconciliation.get_file_path() do
       nil ->
-        case File.mkdir("../../traces") do
-          {:ok} -> "../../traces"
-          {:error, :eexist} -> "../../traces"
-          {:error, error} -> IO.puts("Unable to create the traces folder with error #{error}")
+        if File.exists?("../../traces") do
+          "../../traces"
+        else
+          case File.mkdir("../../traces") do
+            :ok -> "../../traces"
+            {:error, :eexist} -> "../../traces"
+            {:error, error} -> IO.puts("Unable to create the traces folder with error #{error}")
+          end
         end
 
       default_path ->
@@ -19,7 +23,11 @@ defmodule ReconciliationTest do
     json_content = Jason.encode!(content)
 
     fpath = test_get_trace_file_path()
-    File.mkdir("#{fpath}/test")
+
+    if !File.exists?("#{fpath}/test") do
+      File.mkdir("#{fpath}/test")
+    end
+
     full_fname = "#{fpath}/test/#{fname}"
 
     case File.touch!(full_fname) do
@@ -89,14 +97,18 @@ defmodule ReconciliationTest do
   test "Combine trace file" do
     test_create_trace()
     fpath = "#{test_get_trace_file_path()}/test"
-    IO.puts("Test trace file output path: #{fpath}")
     trace_events = Reconciliation.combine_trace(fpath)
+
     assert length(trace_events) == 5
+  after
+    test_delete_test_trace()
   end
 
   test "Generate trace graph" do
+    test_create_trace()
     fpath = "#{test_get_trace_file_path()}/test"
     trace_events = Reconciliation.combine_trace(fpath)
+
     g = Reconciliation.trace_graph(trace_events)
     IO.puts("#{inspect(g)}")
 
