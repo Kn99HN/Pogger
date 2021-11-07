@@ -24,7 +24,8 @@ defmodule ReconciliationTest do
     json_content = Jason.encode!(content)
 
     fpath = test_get_trace_file_path()
-    full_fname = "#{fpath}/#{fname}"
+    File.mkdir("#{fpath}/test")
+    full_fname = "#{fpath}/test/#{fname}"
 
     case File.touch!(full_fname) do
       :ok ->
@@ -34,7 +35,7 @@ defmodule ReconciliationTest do
     end
   end
 
-  test "Combine trace file" do
+  defp test_create_trace() do
     trace1 = %{
       events: [
         %{
@@ -82,18 +83,30 @@ defmodule ReconciliationTest do
     test_output_trace_file("trace1", trace1)
     test_output_trace_file("trace2", trace2)
     test_output_trace_file("trace3", trace3)
+  end
 
-    trace_events = Reconciliation.combine_trace(test_get_trace_file_path())
+  defp test_delete_test_trace() do
+    fpath = test_get_trace_file_path()
+    File.rm_rf("#{fpath}/test")
+    File.rmdir("#{fpath}/test")
+  end
+
+  test "Combine trace file" do
+    test_create_trace()
+    fpath = "#{test_get_trace_file_path()}/test"
+    trace_events = Reconciliation.combine_trace(fpath)
     assert length(trace_events) == 5
   end
 
   test "Generate trace graph" do
-    trace_events = Reconciliation.combine_trace(test_get_trace_file_path())
+    fpath = "#{test_get_trace_file_path()}/test"
+    trace_events = Reconciliation.combine_trace(fpath)
     g = Reconciliation.trace_graph(trace_events)
     IO.puts("#{inspect(g)}")
-    
+
     assert Graph.num_vertices(g) == 5
     assert Graph.num_edges(g) == 4
-
+  after
+    test_delete_test_trace()
   end
 end
