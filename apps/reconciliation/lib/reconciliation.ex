@@ -23,7 +23,7 @@ defmodule Reconciliation do
       {:ok, f_content} ->
         case Jason.decode(f_content) do
           {:ok, file_content} ->
-            events = Map.fetch!(file_content, "events")
+            events = create_trace_event(file_content)
 
           {:error, _} ->
             IO.puts("Unexpected trace file format, unable to decode to Json")
@@ -36,6 +36,28 @@ defmodule Reconciliation do
 
   def get_file_path() do
     System.get_env("TRACE_FILES")
+  end
+
+  defp create_trace_event(file_content) do
+    path_id = Map.fetch!(file_content, "path_id")
+    events = Map.fetch!(file_content, "events")
+        |> Enum.map(fn x -> %Reconciliation.Event{
+            path_id: path_id,
+            event_type: check_event_type(x),
+            detail: x
+        } end)
+  end
+
+  defp check_event_type(event) do
+    if Map.has_key?(event, "ttype") do
+        :task
+    else
+        if Map.has_key?(event, "message_type") do
+            :message
+        else
+            :notice
+        end    
+    end
   end
 
   defp make_vectors_equal_length(v1, v2) do
@@ -80,8 +102,13 @@ defmodule Reconciliation do
   end
 
   defp get_timestamp(event) do
+    %Reconciliation.Event{
+        path_id: path_id,
+        event_type: event_type,
+        detail: detail
+    } = event
     clock_val =
-      event
+      detail
       |> Map.fetch!("timestamp")
       |> Map.fetch!("clock_value")
   end
