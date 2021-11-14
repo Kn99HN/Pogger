@@ -116,8 +116,30 @@ defmodule Reconciliation do
   end
 
   def trace_graph(events) do
+    # The graph has a dummy vertex linking to all the vertexes 
     Graph.new()
+    |> add_str_vertex(events)
     |> update_vertices(events)
+  end
+
+  def add_str_vertex(g, events) do
+    dummy_start = Reconciliation.Event.start()
+
+    g =
+      g
+      |> Graph.add_vertex(dummy_start)
+      |> Reconciliation.add_str_edge(dummy_start, events)
+  end
+
+  def add_str_edge(g, dummy_start, events) do
+    case events do
+      [] ->
+        g
+
+      [head | tail] ->
+        g = g |> Graph.add_edge(Graph.Edge.new(dummy_start, head))
+        add_str_edge(g, dummy_start, tail)
+    end
   end
 
   def update_vertices(g, events) do
