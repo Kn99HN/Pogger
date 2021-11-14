@@ -109,7 +109,7 @@ defmodule Reconciliation do
       event_type: event_type,
       detail: detail
     } = event
-
+    
     detail
     |> Map.fetch!("timestamp")
     |> Map.fetch!("clock_value")
@@ -163,6 +163,7 @@ defmodule Reconciliation do
         g
 
       [head | tail] ->
+        
         case compare_vclock(event, head) do
           @before ->
             g = g |> Graph.add_edge(Graph.Edge.new(event, head))
