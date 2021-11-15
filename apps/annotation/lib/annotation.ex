@@ -14,7 +14,9 @@ defmodule Annotation do
     catch
       :exit, _ -> true
     end
-    Agent.start_link(fn -> Annotation.Path.init(path_id) end, name: context_name)
+    Agent.start_link(fn -> %Annotation.Path{ 
+      path_id: path_id
+    } end, name: context_name)
   end
 
   def terminate do
@@ -37,56 +39,56 @@ defmodule Annotation do
 
   def annotate_start_task(tname, clock_value) do
     timestamp = get_timestamp(clock_value)
-    task = Annotation.Task.init(
-      tname,
-      timestamp,
-      :tstart
-    )
+    task = %Annotation.Task{
+      name: tname,
+      timestamp: timestamp,
+      ttype: :tstart
+    }
     Agent.update(whoami(), fn path -> add_event(path, [task]) end)
     output()
   end
 
   def annotate_end_task(tname, clock_value) do
     timestamp = get_timestamp(clock_value)
-    task = Annotation.Task.init(
-      tname,
-      timestamp,
-      :tend
-    )
+    task = %Annotation.Task{
+      name: tname,
+      timestamp: timestamp,
+      ttype: :tend
+    }
     Agent.update(whoami(), fn path -> add_event(path, [task]) end)
     output()
   end
 
   def annotate_notice(name, clock_value) do
     timestamp = get_timestamp(clock_value)
-    notice = Annotation.Notice.init(
-      name,
-      timestamp
-    )
+    notice = %Annotation.Notice{
+      name: name,
+      timestamp: timestamp
+    }
     Agent.update(whoami(), fn path -> add_event(path, [notice]) end)
     output()
   end
 
   def annotate_send(message_id, message_size, clock_value) do
     timestamp = get_timestamp(clock_value)
-    send_msg = Annotation.Message.init(
-      :send,
-      message_id,
-      message_size,
-      timestamp
-    )
+    send_msg = %Annotation.Message{
+      message_type: :send,
+      message_id: message_id,
+      message_size: message_size,
+      timestamp: timestamp
+    }
     Agent.update(whoami(), fn path -> add_event(path, [send_msg]) end)
     output()
   end
 
   def annotate_receive(message_id, message_size, clock_value) do
     timestamp = get_timestamp(clock_value)
-    received_msg = Annotation.Message.init(
-      :receive,
-      message_id,
-      message_size,
-      timestamp
-    )
+    received_msg = %Annotation.Message{
+      message_type: :receive,
+      message_id: message_id,
+      message_size: message_size,
+      timestamp: timestamp
+    }
     Agent.update(whoami(), fn path -> add_event(path, [received_msg]) end)
     output()
   end
@@ -125,10 +127,10 @@ defmodule Annotation do
   end
 
   defp get_timestamp(clock_value) do
-    Annotation.TimeStamp.init(
-      whoami(),
-      get_path_id(),
-      clock_value
-    )
+    %Annotation.TimeStamp{
+      process_name: whoami(),
+      path_id: get_path_id(),
+      clock_value: clock_value
+    }
   end
 end

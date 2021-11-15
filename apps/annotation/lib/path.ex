@@ -8,12 +8,6 @@ defmodule Annotation.Path do
     events: []
   )
 
-  def init(path_id) do
-    %Path{
-      path_id: path_id,
-      events: []
-    }
-  end
 end
 
 defmodule Annotation.Task do
@@ -25,16 +19,8 @@ defmodule Annotation.Task do
   defstruct(
     name: nil,
     timestamp: nil,
-    ttype: nil,
+    ttype: nil
   )
-
-  def init(name, timestamp, ttype) do
-    %Task{
-      name: name,
-      timestamp: timestamp,
-      ttype: ttype
-    }
-  end
 end
 
 defmodule Annotation.Notice do
@@ -46,13 +32,6 @@ defmodule Annotation.Notice do
     name: nil,
     timestamp: nil
   )
-
-  def init(name, timestamp) do
-    %Notice{
-      name: name,
-      timestamp: timestamp
-    }
-  end
 end
 
 defmodule Annotation.Message do
@@ -64,17 +43,8 @@ defmodule Annotation.Message do
     message_type: nil,
     message_id: nil,
     message_size: nil,
-    timestamp: nil,
+    timestamp: nil
   )
-
-  def init(message_type, message_id, message_size, timestamp) do
-    %Message{
-      message_type: message_type,
-      message_id: message_id,
-      message_size: message_size,
-      timestamp: timestamp
-    }
-  end
 end
 
 defmodule Annotation.TimeStamp do
@@ -87,12 +57,4 @@ defmodule Annotation.TimeStamp do
     path_id: nil,
     clock_value: nil
   )
-
-  def init(process_name, path_id, clock_value) do
-    %TimeStamp{
-      process_name: process_name,
-      path_id: path_id,
-      clock_value: clock_value
-    }
-  end
 end
