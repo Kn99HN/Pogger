@@ -4,14 +4,11 @@ defmodule Checker do
   if there is any valid matching
   """
 
-  import Emulation
-  import Validator
-  import Reconciliation
-
+  @spec is_valid([any()], %Reconciliation.Event{}, %Graph{}) :: boolean()
   def is_valid(expectataions, trace_event, g) do
     case expectataions do
-      %Validator.Recognizer{name: name, map: map} ->
-        Enum.map(map, fn {k, x} -> is_valid(x, trace_event, g) end)
+      %Validator.Recognizer{name: _name, map: map} ->
+        Enum.map(map, fn {_k, x} -> is_valid(x, trace_event, g) end)
         |> Enum.all?()
 
       [] ->
@@ -26,7 +23,7 @@ defmodule Checker do
             matching_events =
               Graph.out_neighbors(g, trace_event)
               |> Enum.filter(fn %Reconciliation.Event{
-                                  detail: detail,
+                                  detail: _detail,
                                   event_type: event_type,
                                   path_id: pathid
                                 } ->
@@ -47,7 +44,7 @@ defmodule Checker do
               |> Enum.filter(fn %Reconciliation.Event{
                                   detail: detail,
                                   event_type: event_type,
-                                  path_id: pathid
+                                  path_id: _pathid
                                 } ->
                 event_type == :message && Map.fetch!(detail, "message_type") == "send" &&
                   Map.fetch!(detail, "message_id") == name
@@ -66,7 +63,7 @@ defmodule Checker do
               |> Enum.filter(fn %Reconciliation.Event{
                                   detail: detail,
                                   event_type: event_type,
-                                  path_id: pathid
+                                  path_id: _pathid
                                 } ->
                 event_type == :message && Map.fetch!(detail, "message_type") == "receive" &&
                   Map.fetch!(detail, "message_id") == name
@@ -85,7 +82,7 @@ defmodule Checker do
               |> Enum.filter(fn %Reconciliation.Event{
                                   detail: detail,
                                   event_type: event_type,
-                                  path_id: pathid
+                                  path_id: _pathid
                                 } ->
                 event_type == :task && Map.fetch!(detail, "name") == name
               end)
@@ -117,6 +114,9 @@ defmodule Checker do
     end
   end
 
+  @spec repeat_check([any()], [any()], non_neg_integer(), %Reconciliation.Event{}, %Graph{}, [
+          boolean()
+        ]) :: [boolean()]
   defp repeat_check(expectations, statements, count, trace_event, g, result) do
     case count do
       -1 ->

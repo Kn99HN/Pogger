@@ -185,4 +185,73 @@ defmodule CheckerTest do
 
     assert Checker.is_valid(expectations, dummy_start, trace_graph) == true
   end
+
+  test "Trace validation on nested task expectations" do
+    expectations = %Validator.Recognizer{
+      name: "V",
+      map: %{
+        "A" => [
+          %Validator.Task{
+            name: "Starting process A",
+            statements: [
+              %Validator.Task{
+                name: "Starting sub process a",
+                statements: [
+                  %Validator.Notice{
+                    pattern: "A"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+    trace_events = [
+      %Reconciliation.Event{
+        detail: %{
+          "name" => "Starting process A",
+          "timestamp" => %{
+            "clock_value" => %{"A" => 1, "B" => 0, "C" => 0},
+            "path_id" => "A",
+            "process_name" => "A"
+          },
+          "ttype" => "tstart"
+        },
+        path_id: "A",
+        event_type: :task
+      },
+      %Reconciliation.Event{
+        detail: %{
+          "name" => "Starting sub process a",
+          "timestamp" => %{
+            "clock_value" => %{"A" => 2, "B" => 0, "C" => 0},
+            "path_id" => "A",
+            "process_name" => "A"
+          },
+          "ttype" => "tstart"
+        },
+        path_id: "A",
+        event_type: :task
+      },
+      %Reconciliation.Event{
+        detail: %{
+          "name" => "Process A notice",
+          "timestamp" => %{
+            "clock_value" => %{"A" => 3, "B" => 0, "C" => 0},
+            "path_id" => "A",
+            "process_name" => "A"
+          }
+        },
+        path_id: "A",
+        event_type: :notice
+      }
+    ]
+
+    dummy_start = Reconciliation.Event.start()
+    trace_graph = Reconciliation.trace_graph(trace_events)
+
+    assert Checker.is_valid(expectations, dummy_start, trace_graph) == true
+  end
 end
