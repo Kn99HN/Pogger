@@ -4,8 +4,7 @@ defmodule Reconciliation do
   to a global trace 
   """
 
-  import Emulation
-
+  @spec combine_trace(String.t()) :: [%Reconciliation.Event{}]
   def combine_trace(file_path) do
     case File.ls(file_path) do
       {:ok, files} ->
@@ -18,12 +17,13 @@ defmodule Reconciliation do
     end
   end
 
+  @spec parse_file(String.t(), String.t()) :: [%Reconciliation.Event{}]
   defp parse_file(file_path, file_name) do
     case File.read("#{file_path}/#{file_name}") do
       {:ok, f_content} ->
         case Jason.decode(f_content) do
           {:ok, file_content} ->
-            events = create_trace_event(file_content)
+            create_trace_event(file_content)
 
           {:error, _} ->
             IO.puts("Unexpected trace file format, unable to decode to Json")
@@ -38,20 +38,21 @@ defmodule Reconciliation do
     System.get_env("TRACE_FILES")
   end
 
+  @spec create_trace_event(String.t()) :: [%Reconciliation.Event{}]
   defp create_trace_event(file_content) do
     path_id = Map.fetch!(file_content, "path_id")
 
-    events =
-      Map.fetch!(file_content, "events")
-      |> Enum.map(fn x ->
-        %Reconciliation.Event{
-          path_id: path_id,
-          event_type: check_event_type(x),
-          detail: x
-        }
-      end)
+    Map.fetch!(file_content, "events")
+    |> Enum.map(fn x ->
+      %Reconciliation.Event{
+        path_id: path_id,
+        event_type: check_event_type(x),
+        detail: x
+      }
+    end)
   end
 
+  @spec check_event_type(%Reconciliation.Event{}) :: :task | :message | :notice
   defp check_event_type(event) do
     if Map.has_key?(event, "ttype") do
       :task
@@ -64,6 +65,7 @@ defmodule Reconciliation do
     end
   end
 
+  @spec make_vectors_equal_length(map(), map()) :: map()
   defp make_vectors_equal_length(v1, v2) do
     v1_add = for {k, _} <- v2, !Map.has_key?(v1, k), do: {k, 0}
     Map.merge(v1, Enum.into(v1_add, %{}))
@@ -73,6 +75,7 @@ defmodule Reconciliation do
   @hafter :after
   @concurrent :concurrent
 
+  @spec compare_component(non_neg_integer(), non_neg_integer()) :: :before | :after | :concurrent
   defp compare_component(c1, c2) do
     cond do
       c1 < c2 -> @before
@@ -81,6 +84,8 @@ defmodule Reconciliation do
     end
   end
 
+  @spec compare_vclock(%Reconciliation.Event{}, %Reconciliation.Event{}) ::
+          :before | :after | :concurrent
   def compare_vclock(event1, event2) do
     v1 = get_timestamp(event1)
     v2 = get_timestamp(event2)
@@ -103,10 +108,11 @@ defmodule Reconciliation do
     end
   end
 
+  @spec get_timestamp(%Reconciliation.Event{}) :: map()
   defp get_timestamp(event) do
     %Reconciliation.Event{
-      path_id: path_id,
-      event_type: event_type,
+      path_id: _path_id,
+      event_type: _event_type,
       detail: detail
     } = event
 
@@ -115,11 +121,36 @@ defmodule Reconciliation do
     |> Map.fetch!("clock_value")
   end
 
+  @spec trace_graph([%Reconciliation.Event{}]) :: %Graph{}
   def trace_graph(events) do
+    # The graph has a dummy vertex linking to all the vertexes 
     Graph.new()
+    |> add_str_vertex(events)
     |> update_vertices(events)
   end
 
+  @spec add_str_vertex(%Graph{}, [%Reconciliation.Event{}]) :: %Graph{}
+  def add_str_vertex(g, events) do
+    dummy_start = Reconciliation.Event.start()
+
+    g
+    |> Graph.add_vertex(dummy_start)
+    |> Reconciliation.add_str_edge(dummy_start, events)
+  end
+
+  @spec add_str_edge(%Graph{}, %Reconciliation.Event{}, [%Reconciliation.Event{}]) :: %Graph{}
+  def add_str_edge(g, dummy_start, events) do
+    case events do
+      [] ->
+        g
+
+      [head | tail] ->
+        g = g |> Graph.add_edge(Graph.Edge.new(dummy_start, head))
+        add_str_edge(g, dummy_start, tail)
+    end
+  end
+
+  @spec update_vertices(%Graph{}, [%Reconciliation.Event{}]) :: %Graph{}
   def update_vertices(g, events) do
     case events do
       [] ->
@@ -135,6 +166,7 @@ defmodule Reconciliation do
     end
   end
 
+  @spec update_edge(%Graph{}, %Reconciliation.Event{}, [%Reconciliation.Event{}]) :: %Graph{}
   def update_edge(g, event, events) do
     case events do
       [] ->

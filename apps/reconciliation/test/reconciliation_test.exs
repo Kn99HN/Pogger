@@ -112,8 +112,8 @@ defmodule ReconciliationTest do
     g = Reconciliation.trace_graph(trace_events)
     IO.puts("#{inspect(g)}")
 
-    assert Graph.num_vertices(g) == 5
-    assert Graph.num_edges(g) == 4
+    assert Graph.num_vertices(g) == 6
+    assert Graph.num_edges(g) == 9
   after
     test_delete_test_trace()
   end
