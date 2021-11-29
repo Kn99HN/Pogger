@@ -37,11 +37,16 @@ defmodule AnalysisTest do
         Annotation.annotate_task(":incr", 0)
         val = val + 1
         send(sender, {:enq, val})
-        Annotation.annotate_send("b:send", val, 2)
+        Annotation.annotate_send("b:update", val, 2)
     end
   end
 
   test "basic traces with send and receive" do
     Emulation.init()
+    
+    # spawn new processes
+    # read expectation file
+    # read trace files 
+    # call checker on each one
   end
 end
