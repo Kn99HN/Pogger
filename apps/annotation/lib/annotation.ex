@@ -93,7 +93,7 @@ defmodule Annotation do
     output()
   end
 
-  defp output() do
+  defp output do
     file = get_file_path()
     path = Agent.get(whoami(), fn path -> path end)
     path_id = Map.get(path, :path_id)
@@ -111,7 +111,7 @@ defmodule Annotation do
     end
   end
 
-  defp read_from_file() do
+  defp read_from_file do
     file = get_file_path()
     path_id = get_path_id()
     if file != nil do
@@ -122,7 +122,7 @@ defmodule Annotation do
     end
   end
 
-  defp get_file_path() do
+  defp get_file_path do
     System.get_env("TRACE_FILES")
   end
 

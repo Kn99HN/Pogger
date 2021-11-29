@@ -23,6 +23,11 @@ defmodule Analysis.MixProject do
     [
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:emulation, in_umbrella: true}
+      {:checker, in_umbrella: true}
+      {:recognizer, in_umbrella: true}
+      {:annotation, in_umbrella: true}
+      {:reconciliation, in_umbrella: true}
     ]
   end
 end
