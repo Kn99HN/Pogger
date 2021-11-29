@@ -9,5 +9,5 @@ erl_crash.dump
 /config/*.secret.exs
 .elixir_ls/
 /traces
-/expectations
+/expectations/
 .DS_Store

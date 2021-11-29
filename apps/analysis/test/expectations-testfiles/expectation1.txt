@@ -1,0 +1,12 @@
+validator A {
+  process("A") {
+    send(":server")
+  },
+  prorcess("B"){
+    send(":server")
+    reiceve(":server")
+    task(":incr") {
+      send(":server")
+    }
+  }
+}
