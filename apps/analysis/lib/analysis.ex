@@ -1,5 +1,6 @@
 defmodule Analysis do
-  import Emulation, only: [spawn: 2, send: 2]
+  import Emulation, only: [spawn: 2, send: 2, whoami: 0]
+
   import Kernel,
     except: [spawn: 3, spawn: 1, spawn_link: 1, spawn_link: 3, send: 2]
 
@@ -8,8 +9,7 @@ defmodule Analysis do
   import Reconciliation
   import Validator
 
-
-  defp queue_server do 
+  defp queue_server do
     queue_server([])
   end
 
@@ -17,9 +17,12 @@ defmodule Analysis do
     receive do
       {sender, {:enq, val}} ->
         queue_server([val] ++ queue)
+
       {sender, {:deq}} ->
         case queue do
-          [] -> raise "Queue is empty"
+          [] ->
+            raise "Queue is empty"
+
           [head | tail] ->
             send(sender, head)
             queue_server(tail)
@@ -31,22 +34,24 @@ defmodule Analysis do
     Annotation.init("A")
     msg_id = "a-enq"
     Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
-    send(server, {:enq, 1})
+    send(:server, {:enq, 1})
   end
 
   defp processB(server) do
     Annotation.init("B")
     msg_id = "b-deq"
     Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
-    send(server, {:deq})
+    send(:server, {:deq})
+
     receive do
       {sender, val} ->
         Annotation.annotate_receive("b-receive", val, %{A: 0, B: 1})
         Annotation.annotate_start_task("b-incr", %{A: 0, B: 2})
         val = val + 1
         Annotation.annotate_end_task("b-incr", %{A: 0, B: 3})
-        send(sender, {:enq, val})
+        send(:server, {:enq, val})
         Annotation.annotate_send("b-update", val, %{A: 0, B: 4})
+        send(server, :done)
     end
   end
 
@@ -54,14 +59,12 @@ defmodule Analysis do
     Emulation.init()
     spawn(:server, fn -> queue_server end)
     spawn(:a, fn -> processA(:server) end)
-    spawn(:b, fn -> processB(:server) end)
+    spawn(:b, fn -> processB(whoami()) end)
 
     expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
     recognizers = read_expectations_files(expectation_path)
     trace_events = read_trace("")
     results = check(recognizers, trace_events)
-
-    IO.puts("#{inspect(results)}")
   after
     Emulation.terminate()
   end
@@ -72,11 +75,13 @@ defmodule Analysis do
 
   def check(recognizers, trace_graph, results) do
     case recognizers do
-      [] -> results
+      [] ->
+        results
+
       [head | tail] ->
         dummy_start = Reconciliation.Event.start()
         res = Checker.is_valid(head, dummy_start, trace_graph)
-        check(recognizers, trace_graph, [res] ++ results)
+        check(tail, trace_graph, [res] ++ results)
     end
   end
 
@@ -87,24 +92,30 @@ defmodule Analysis do
 
   defp read_expectations_files(path) do
     case File.ls(path) do
-      {:ok, files} -> 
-        read_expectations_files(Enum.map(files, fn file -> Path.expand("#{path}/#{file}") end), [])
-      {:error, reason} -> raise "Failed to read files from #{path}. Reason: #{reason}"
+      {:ok, files} ->
+        read_expectations_files(
+          Enum.map(files, fn file -> Path.expand("#{path}/#{file}") end),
+          []
+        )
+
+      {:error, reason} ->
+        raise "Failed to read files from #{path}. Reason: #{reason}"
     end
   end
 
   defp read_expectations_files(files, expectations) do
     case files do
-      [] -> expectations
+      [] ->
+        expectations
+
       [head | tail] ->
         case File.read(head) do
-          {:ok, bin} -> 
-            IO.puts("#{inspect(head)}")
-            IO.puts("#{inspect(bin)}")
+          {:ok, bin} ->
             read_expectations_files(tail, [Validator.to_recognizer(bin)] ++ expectations)
-          {:error, reason} -> raise "Failed to read files from #{head}. Reason: #{reason}"
+
+          {:error, reason} ->
+            raise "Failed to read files from #{head}. Reason: #{reason}"
         end
     end
   end
-
 end

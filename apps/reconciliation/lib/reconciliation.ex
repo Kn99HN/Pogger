@@ -69,7 +69,6 @@ defmodule Reconciliation do
 
   @spec make_vectors_equal_length(map(), map()) :: map()
   defp make_vectors_equal_length(v1, v2) do
-    IO.puts("#{inspect(v1)} - #{inspect(v2)}")
     v1_add = for {k, _} <- v2, !Map.has_key?(v1, k), do: {k, 0}
     Map.merge(v1, Enum.into(v1_add, %{}))
   end
@@ -97,7 +96,6 @@ defmodule Reconciliation do
     v2 = make_vectors_equal_length(v2, v1)
 
     compare_result = Map.values(Map.merge(v1, v2, fn _k, c1, c2 -> compare_component(c1, c2) end))
-
     cond do
       Enum.any?(compare_result, fn x -> x == @before end) &&
           Enum.any?(compare_result, fn x -> x == @hafter end) ->

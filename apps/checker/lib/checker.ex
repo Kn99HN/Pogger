@@ -118,6 +118,7 @@ defmodule Checker do
           boolean()
         ]) :: [boolean()]
   defp repeat_check(expectations, statements, count, trace_event, g, result) do
+    IO.puts("#{inspect(count)}")
     case count do
       -1 ->
         result

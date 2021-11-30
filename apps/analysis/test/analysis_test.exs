@@ -5,5 +5,4 @@ defmodule AnalysisTest do
   test "basic_send_and_receive" do
     Analysis.basic_send_and_receive()
   end
-
 end
