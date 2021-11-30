@@ -6,20 +6,22 @@ defmodule Reconciliation do
 
   @spec combine_trace(String.t()) :: [%Reconciliation.Event{}]
   def combine_trace(file_path) do
-    case File.ls(file_path) do
+    abs_path = Path.expand(file_path)
+    case File.ls(abs_path) do
       {:ok, files} ->
         files
         |> Enum.filter(fn x -> !String.starts_with?(x, ".") end)
-        |> Enum.flat_map(fn x -> parse_file(file_path, x) end)
+        |> Enum.flat_map(fn x -> parse_file(abs_path, x) end)
 
       {:error, reason} ->
-        IO.puts("Unable to locate the trace files with error #{reason}")
+        IO.puts("Unable to locate the trace files at #{inspect(file_path)} with error #{reason}")
     end
   end
 
   @spec parse_file(String.t(), String.t()) :: [%Reconciliation.Event{}]
   defp parse_file(file_path, file_name) do
-    case File.read("#{file_path}/#{file_name}") do
+    abs_path = Path.expand("#{file_path}/#{file_name}")
+    case File.read(abs_path) do
       {:ok, f_content} ->
         case Jason.decode(f_content) do
           {:ok, file_content} ->
@@ -67,6 +69,7 @@ defmodule Reconciliation do
 
   @spec make_vectors_equal_length(map(), map()) :: map()
   defp make_vectors_equal_length(v1, v2) do
+    IO.puts("#{inspect(v1)} - #{inspect(v2)}")
     v1_add = for {k, _} <- v2, !Map.has_key?(v1, k), do: {k, 0}
     Map.merge(v1, Enum.into(v1_add, %{}))
   end
@@ -105,6 +108,9 @@ defmodule Reconciliation do
 
       Enum.any?(compare_result, fn x -> x == @hafter end) ->
         @hafter
+      
+      Enum.all?(compare_result, fn x -> x == @concurrent end) ->
+        @concurrent
     end
   end
 

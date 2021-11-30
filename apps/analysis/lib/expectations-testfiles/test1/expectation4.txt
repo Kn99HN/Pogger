@@ -1,14 +1,14 @@
-validator A {
-  process("A") {
-    maybe receive("a:deq")
-    send("a:enq")
+validator(A) {
+  process(A) {
+    receive("a-deq")
+    send("a-enq")
   },
-  prorcess("B"){
-    send("b:deq")
-    maybe task(":dec")
-    task(":incr") {
-      send("b:update")
-    }
-    reiceve("b:receive")
+  process(B){
+    send("b-deq"),
+    maybe task("b-dec"),
+    task("b-incr") {
+      send("b-update");
+    },
+    receive("b-receive")
   }
 }

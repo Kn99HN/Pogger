@@ -29,38 +29,36 @@ defmodule Analysis do
 
   defp processA(server) do
     Annotation.init("A")
-    msg_id = "a:enq"
-    Annotation.annotate_send(msg_id, byte_size(msg_id), 0)
+    msg_id = "a-enq"
+    Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
     send(server, {:enq, 1})
   end
 
   defp processB(server) do
     Annotation.init("B")
-    msg_id = "b:deq"
-    Annotation.annotate_send(msg_id, byte_size(msg_id), 0)
+    msg_id = "b-deq"
+    Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
+    send(server, {:deq})
     receive do
       {sender, val} ->
-        Annotation.annotate_receive("b:receive", val, 1)
-        Annotation.annotate_start_task("b:incr", 2)
+        Annotation.annotate_receive("b-receive", val, %{A: 0, B: 1})
+        Annotation.annotate_start_task("b-incr", %{A: 0, B: 2})
         val = val + 1
-        Annotation.annotate_end_task("b:incr", 3)
+        Annotation.annotate_end_task("b-incr", %{A: 0, B: 3})
         send(sender, {:enq, val})
-        Annotation.annotate_send("b:update", val, 333)
+        Annotation.annotate_send("b-update", val, %{A: 0, B: 4})
     end
   end
 
-  defp basic_send_and_receive do
+  def basic_send_and_receive do
     Emulation.init()
-    # spawn new processes
-    # read expectation file
-    # read trace files 
-    # call checker on each one
     spawn(:server, fn -> queue_server end)
     spawn(:a, fn -> processA(:server) end)
     spawn(:b, fn -> processB(:server) end)
 
-    recognizers = read_expectations_files("./expectation-testfiles/test1")
-    trace_events = read_trace("test1/trace.txt")
+    expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
+    recognizers = read_expectations_files(expectation_path)
+    trace_events = read_trace("")
     results = check(recognizers, trace_events)
 
     IO.puts("#{inspect(results)}")
@@ -68,11 +66,11 @@ defmodule Analysis do
     Emulation.terminate()
   end
 
-  defp check(recognizers, trace_events) do
+  def check(recognizers, trace_events) do
     check(recognizers, Reconciliation.trace_graph(trace_events), [])
   end
 
-  defp check(recognizers, trace_graph, results) do
+  def check(recognizers, trace_graph, results) do
     case recognizers do
       [] -> results
       [head | tail] ->
@@ -83,20 +81,29 @@ defmodule Analysis do
   end
 
   defp read_trace(fname) do
-    Reconciliation.combine_trace("~/pogger/apps/analysis/lib/traces/#{fname}")
+    trace_path = Path.expand("~/pogger/apps/analysis/lib/traces/#{fname}")
+    Reconciliation.combine_trace(trace_path)
   end
 
   defp read_expectations_files(path) do
-    {:ok, files} = File.ls(path)
-    read_expectations_files(files, [])
+    case File.ls(path) do
+      {:ok, files} -> 
+        read_expectations_files(Enum.map(files, fn file -> Path.expand("#{path}/#{file}") end), [])
+      {:error, reason} -> raise "Failed to read files from #{path}. Reason: #{reason}"
+    end
   end
 
   defp read_expectations_files(files, expectations) do
     case files do
       [] -> expectations
       [head | tail] ->
-        {:ok, bin} = File.read(head)
-        read_expectations_files(tail, [Validator.to_recognizer(bin)] ++ expectations)
+        case File.read(head) do
+          {:ok, bin} -> 
+            IO.puts("#{inspect(head)}")
+            IO.puts("#{inspect(bin)}")
+            read_expectations_files(tail, [Validator.to_recognizer(bin)] ++ expectations)
+          {:error, reason} -> raise "Failed to read files from #{head}. Reason: #{reason}"
+        end
     end
   end
 

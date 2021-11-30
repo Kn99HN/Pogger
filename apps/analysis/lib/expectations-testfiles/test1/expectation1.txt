@@ -1,12 +1,12 @@
-validator A {
+validator(A) {
   process("A") {
-    send(":server")
+    send("server")
   },
-  prorcess("B"){
-    send(":server")
-    reiceve(":server")
-    task(":incr") {
-      send(":server")
+  process("B"){
+    send("server");
+    receive("server");
+    task("b-incr") {
+      send("server")
     }
   }
 }

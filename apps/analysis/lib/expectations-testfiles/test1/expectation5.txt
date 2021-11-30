@@ -1,18 +1,17 @@
-validator A {
-  process("A") {
+validator(A) {
+  process(A) {
+    task("a-incr");
     repeat between 1 and 3 {
-      send("a:enq")
-    }
-    task("a:incr")
+      send("a-enq")
+    };
   },
-  prorcess("B"){
-    send("b:deq")
-    task(":incr") {
-      maybe send("b:update")
-      maybe send("b:remove")
-      maybe send("b:update")
-    }
-    maybe reiceve("b:receive")
-    task("b:dec")
+  process(B){
+    send("b-deq"),
+    task("b-incr") {
+      send("b-update"),
+      send("b-remove"),
+      send("b-update"),
+    },
+    receive("b-receive");
   }
 }

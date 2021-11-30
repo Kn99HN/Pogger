@@ -102,9 +102,10 @@ defmodule Annotation do
       nil -> IO.puts("#{inspect(json_path)}")
       fname ->
         full_fname = "#{fname}/#{path_id}"
-        case File.touch!(full_fname) do
+        abs_path = Path.expand(full_fname)
+        case File.touch!(abs_path) do
           :ok ->
-            {:ok, file} = File.open(full_fname, [:write])
+            {:ok, file} = File.open(abs_path, [:write])
             IO.binwrite(file, json_path)
             File.close(file)
         end
@@ -116,7 +117,8 @@ defmodule Annotation do
     path_id = get_path_id()
     if file != nil do
       full_fname = "#{file}/#{path_id}"
-      {:ok, path} = File.read(full_fname)
+      abs_path = Path.expand(full_fname)
+      {:ok, path} = File.read(abs_path)
       decoded_path = Jason.decode!(path)
       IO.puts("#{inspect(decoded_path)}")
     end
