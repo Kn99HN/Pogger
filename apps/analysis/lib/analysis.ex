@@ -31,14 +31,16 @@ defmodule Analysis do
   end
 
   defp processA(server) do
-    Annotation.init("A")
+    log_path = "~/pogger/apps/analysis/lib/traces/test1"
+    Annotation.init("A", log_path)
     msg_id = "a-enq"
     Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
     send(:server, {:enq, 1})
   end
 
   defp processB(server) do
-    Annotation.init("B")
+    log_path = "~/pogger/apps/analysis/lib/traces/test1"
+    Annotation.init("B", log_path)
     msg_id = "b-deq"
     Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
     send(:server, {:deq})
@@ -61,10 +63,14 @@ defmodule Analysis do
     spawn(:a, fn -> processA(:server) end)
     spawn(:b, fn -> processB(whoami()) end)
 
+    case File.mkdir(Path.expand("~/pogger/apps/analysis/lib/traces/test1")) do
+      _ -> true
+    end
     expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
     recognizers = read_expectations_files(expectation_path)
-    trace_events = read_trace("")
+    trace_events = read_trace("test1")
     results = check(recognizers, trace_events)
+    IO.puts("#{inspect(results)}")
   after
     Emulation.terminate()
   end

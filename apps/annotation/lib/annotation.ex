@@ -7,7 +7,7 @@ defmodule Annotation do
   """
   
   
-  def init(path_id) do
+  def init(path_id, log_path) do
     context_name = whoami()
     try do
       Agent.stop(context_name)
@@ -15,7 +15,8 @@ defmodule Annotation do
       :exit, _ -> true
     end
     Agent.start_link(fn -> %Annotation.Path{ 
-      path_id: path_id
+      path_id: path_id,
+      log_path: log_path
     } end, name: context_name)
   end
 
@@ -125,7 +126,10 @@ defmodule Annotation do
   end
 
   defp get_file_path do
-    System.get_env("TRACE_FILES")
+    case Agent.get(whoami(), fn path -> Map.get(path, :log_path) end) do
+      nil -> System.get_env("TRACE_FILES")
+      output_path -> output_path
+    end
   end
 
   defp get_timestamp(clock_value) do
