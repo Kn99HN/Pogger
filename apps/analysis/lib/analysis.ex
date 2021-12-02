@@ -21,8 +21,7 @@ defmodule Analysis do
       {sender, {:deq}} ->
         case queue do
           [] ->
-            raise "Queue is empty"
-
+            send(sender, :empty)
           [head | tail] ->
             send(sender, head)
             queue_server(tail)
@@ -36,46 +35,54 @@ defmodule Analysis do
     msg_id = "a-enq"
     Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
     send(:server, {:enq, 1})
+    send(:b, :start_deq)
   end
 
   defp processB(server) do
     log_path = "~/pogger/apps/analysis/lib/traces/test1"
     Annotation.init("B", log_path)
-    msg_id = "b-deq"
-    Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
-    send(:server, {:deq})
-
+    
     receive do
+      {sender, :start_deq} ->
+        msg_id = "b-deq"
+        Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
+        send(:server, {:deq})
+        processB(server)
       {sender, val} ->
         Annotation.annotate_receive("b-receive", val, %{A: 0, B: 1})
         Annotation.annotate_start_task("b-incr", %{A: 0, B: 2})
         val = val + 1
         Annotation.annotate_end_task("b-incr", %{A: 0, B: 3})
-        send(:server, {:enq, val})
         Annotation.annotate_send("b-update", val, %{A: 0, B: 4})
-        send(server, :done)
+        send(:server, {:enq, val})
+        send(server, true)
     end
   end
 
   def basic_send_and_receive do
     Emulation.init()
+    parent = self()
     spawn(:server, fn -> queue_server end)
     spawn(:a, fn -> processA(:server) end)
-    spawn(:b, fn -> processB(whoami()) end)
+    spawn(:b, fn -> processB(parent) end)
 
-    case File.mkdir(Path.expand("~/pogger/apps/analysis/lib/traces/test1")) do
-      _ -> true
+    receive do 
+      true ->
+        IO.puts("Done with testing")
+        case File.mkdir(Path.expand("~/pogger/apps/analysis/lib/traces/test1")) do
+          _ -> true
+        end
+        expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
+        recognizers = read_expectations_files(expectation_path)
+        trace_events = read_trace("test1")
+        results = check(recognizers, trace_events)
     end
-    expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
-    recognizers = read_expectations_files(expectation_path)
-    trace_events = read_trace("test1")
-    results = check(recognizers, trace_events)
-    IO.puts("#{inspect(results)}")
   after
     Emulation.terminate()
   end
 
   def check(recognizers, trace_events) do
+    trace_graph = Reconciliation.trace_graph(trace_events)
     check(recognizers, Reconciliation.trace_graph(trace_events), [])
   end
 
@@ -117,6 +124,8 @@ defmodule Analysis do
       [head | tail] ->
         case File.read(head) do
           {:ok, bin} ->
+            recognizer = Validator.to_recognizer(bin)
+            IO.puts("#{inspect(recognizer)}")
             read_expectations_files(tail, [Validator.to_recognizer(bin)] ++ expectations)
 
           {:error, reason} ->
