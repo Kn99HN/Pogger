@@ -51,12 +51,12 @@ defmodule Checker do
               end)
 
             if length(matching_events) > 0 do
-              Enum.map(matching_events, fn e -> is_valid(tail, e, g) end)
+              Enum.map(matching_events, fn e -> 
+                is_valid(tail, e, g) end)
               |> Enum.any?()
             else
               false
             end
-
           %Validator.Receive{name: name} ->
             matching_events =
               Graph.out_neighbors(g, trace_event)
@@ -86,7 +86,7 @@ defmodule Checker do
                                 } ->
                 event_type == :task && Map.fetch!(detail, "name") == name
               end)
-
+            
             if length(matching_events) > 0 do
               tail = statements ++ tail
 

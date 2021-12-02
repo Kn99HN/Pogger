@@ -1,0 +1,11 @@
+validator(A) {
+  process(A) {
+    send(a-enq),
+    send(b-deq),
+    receive(b-receive),
+    maybe {
+      task(b-incr)
+    },
+    send(b-update)
+  }
+}

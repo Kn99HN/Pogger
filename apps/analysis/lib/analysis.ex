@@ -72,9 +72,11 @@ defmodule Analysis do
           _ -> true
         end
         expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
-        recognizers = read_expectations_files(expectation_path)
+        res = read_expectations_files(expectation_path)
+        recognizers = res |> Enum.map(fn rec -> Map.get(rec, :expectation) end)
+        files = res |> Enum.map(fn rec -> Path.basename(Map.get(rec, :file)) end)
         trace_events = read_trace("test1")
-        results = check(recognizers, trace_events)
+        results = Enum.zip([Enum.reverse(files), check(recognizers, trace_events)])
         IO.puts("#{inspect(results)}")
     end
   after
@@ -82,8 +84,6 @@ defmodule Analysis do
   end
 
   def check(recognizers, trace_events) do
-    graph = Reconciliation.trace_graph(trace_events)
-    IO.puts("#{inspect(graph)}")
     check(recognizers, Reconciliation.trace_graph(trace_events), [])
   end
 
@@ -126,8 +126,7 @@ defmodule Analysis do
         case File.read(head) do
           {:ok, bin} ->
             recognizer = Validator.to_recognizer(bin)
-            IO.puts("#{inspect(recognizer)}")
-            read_expectations_files(tail, [Validator.to_recognizer(bin)] ++ expectations)
+            read_expectations_files(tail, [%{expectation: Validator.to_recognizer(bin), file: head}] ++ expectations)
 
           {:error, reason} ->
             raise "Failed to read files from #{head}. Reason: #{reason}"
