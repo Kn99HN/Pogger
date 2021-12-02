@@ -19,7 +19,7 @@ defmodule BasicAnnotationTest do
   end
 
   def basic_trace_with_send_and_receive_annotation(caller) do
-    Annotation.init("c")
+    Annotation.init("c", nil)
     msg = "Hello world!"
     Annotation.annotate_send("c:send", byte_size(msg), 1)
     send(self(), msg)
