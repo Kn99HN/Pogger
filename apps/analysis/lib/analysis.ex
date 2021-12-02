@@ -39,21 +39,21 @@ defmodule Analysis do
   end
 
   defp processB(server) do
-    log_path = "~/pogger/apps/analysis/lib/traces/test1"
-    Annotation.init("B", log_path)
-    
+        
     receive do
       {sender, :start_deq} ->
+        log_path = "~/pogger/apps/analysis/lib/traces/test1"
+        Annotation.init("B", log_path)
         msg_id = "b-deq"
-        Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 0, B: 0})
+        Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 1, B: 0})
         send(:server, {:deq})
         processB(server)
       {sender, val} ->
-        Annotation.annotate_receive("b-receive", val, %{A: 0, B: 1})
-        Annotation.annotate_start_task("b-incr", %{A: 0, B: 2})
+        Annotation.annotate_receive("b-receive", val, %{A: 1, B: 1})
+        Annotation.annotate_start_task("b-incr", %{A: 1, B: 2})
         val = val + 1
-        Annotation.annotate_end_task("b-incr", %{A: 0, B: 3})
-        Annotation.annotate_send("b-update", val, %{A: 0, B: 4})
+        Annotation.annotate_end_task("b-incr", %{A: 1, B: 3})
+        Annotation.annotate_send("b-update", val, %{A: 1, B: 4})
         send(:server, {:enq, val})
         send(server, true)
     end
@@ -68,7 +68,6 @@ defmodule Analysis do
 
     receive do 
       true ->
-        IO.puts("Done with testing")
         case File.mkdir(Path.expand("~/pogger/apps/analysis/lib/traces/test1")) do
           _ -> true
         end
@@ -76,13 +75,13 @@ defmodule Analysis do
         recognizers = read_expectations_files(expectation_path)
         trace_events = read_trace("test1")
         results = check(recognizers, trace_events)
+        IO.puts("#{inspect(results)}")
     end
   after
     Emulation.terminate()
   end
 
   def check(recognizers, trace_events) do
-    trace_graph = Reconciliation.trace_graph(trace_events)
     check(recognizers, Reconciliation.trace_graph(trace_events), [])
   end
 
