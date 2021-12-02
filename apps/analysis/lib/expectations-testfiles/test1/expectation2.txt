@@ -1,8 +1,6 @@
 validator(A) {
   process(A) {
     send("a-enq")
-  },
-  process(B){
     send("b-deq")
     task("b-incr") {
       send("b-update")

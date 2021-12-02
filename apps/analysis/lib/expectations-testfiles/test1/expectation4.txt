@@ -2,8 +2,6 @@ validator(A) {
   process(A) {
     receive("a-deq")
     send("a-enq")
-  },
-  process(B){
     send("b-deq"),
     maybe task("b-dec"),
     task("b-incr") {

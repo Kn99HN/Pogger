@@ -3,9 +3,7 @@ validator(A) {
     task("a-incr");
     repeat between 1 and 3 {
       send("a-enq")
-    };
-  },
-  process(B){
+    },
     send("b-deq"),
     task("b-incr") {
       send("b-update"),

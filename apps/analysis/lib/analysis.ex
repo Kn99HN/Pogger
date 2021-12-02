@@ -82,6 +82,8 @@ defmodule Analysis do
   end
 
   def check(recognizers, trace_events) do
+    graph = Reconciliation.trace_graph(trace_events)
+    IO.puts("#{inspect(graph)}")
     check(recognizers, Reconciliation.trace_graph(trace_events), [])
   end
 

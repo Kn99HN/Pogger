@@ -1,14 +1,12 @@
 validator(A) {
   process(A) {
     send("a-enq");
-  },
-  prorcess(B){
     repeat between 1 and 3 {
       send("b-deq")
     },
     task("b-incr") {
       send("b-update")
     },
-    reiceve("b-receive")
+    receive("b-receive")
   }
 }
