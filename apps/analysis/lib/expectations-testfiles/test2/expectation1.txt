@@ -1,0 +1,6 @@
+Validator(B) {
+  process(B) {
+    send(c-enq),
+    send(d-enq)
+  }
+}

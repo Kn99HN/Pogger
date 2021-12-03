@@ -90,38 +90,18 @@ defmodule Analysis do
   end
 
   defp processC do
-   send(:server, {:deq})
-   receive do
-      {_, :empty} ->
-        log_path = "~/pogger/apps/analysis/lib/traces/test2"
-        Annotation.init("C", log_path)
-        processC()
-      {_, val} ->
-        Annotation.annotate_start_task("c-incr", %{C: 0, D: 0})
-        val = val + 10
-        Annotation.annotate_end_task("c-incr", %{C: 1, D: 0})
-        Annotation.annotate_send("c-enq", val, %{C: 2, D: 0})
-        send(:server, {:enq, val})
-    end
+      log_path = "~/pogger/apps/analysis/lib/traces/test2"
+      Annotation.init("C", log_path)
+      Annotation.annotate_send("c-enq", 0, %{C: 0, D: 0})
+      send(:server, {:enq, 1})
   end
 
   defp processD(caller) do
-     send(:server, {:deq})
-     receive do
-      {_, :empty} ->
-        log_path = "~/pogger/apps/analysis/lib/traces/test2"
-        Annotation.init("D", log_path)
-        Annotation.annotate_send("d-enq", 10, %{C: 0, D: 0})
-        send(:server, {:enq, 10})
-        processD(caller)
-      {_, val} ->
-        Annotation.annotate_start_task("d-incr", %{C: 0, D: 1})
-        val = val - 10
-        Annotation.annotate_end_task("d-incr", %{C: 0, D: 2})
-        Annotation.annotate_send("d-enq", val, %{C: 0, D: 3})
-        send(:server, {:enq, val})
-        send(caller, true)
-     end
+      log_path = "~/pogger/apps/analysis/lib/traces/test2"
+      Annotation.init("D", log_path)
+      Annotation.annotate_send("d-enq", 0, %{C: 1, D: 0})
+      send(:server, {:enq, 2})
+      send(caller, true)
   end
 
   def nonsequentail_send_and_receive do
@@ -134,9 +114,8 @@ defmodule Analysis do
           _ -> true
     end
     spawn(:server, fn -> queue_server end)
-    spawn(:d, fn -> processD(parent) end)
     spawn(:c, fn -> processC end)
-
+    spawn(:d, fn -> processD(parent) end)
     receive do
       true ->
         expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test2")
@@ -153,7 +132,8 @@ defmodule Analysis do
   end
 
   def check(recognizers, trace_events) do
-    check(recognizers, Reconciliation.trace_graph(trace_events), [])
+    graph = Reconciliation.trace_graph(trace_events)
+    check(recognizers, graph, [])
   end
 
   def check(recognizers, trace_graph, results) do
