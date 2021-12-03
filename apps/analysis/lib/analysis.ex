@@ -22,6 +22,8 @@ defmodule Analysis do
         case queue do
           [] ->
             send(sender, :empty)
+            queue_server(queue)
+
           [head | tail] ->
             send(sender, head)
             queue_server(tail)
@@ -39,7 +41,6 @@ defmodule Analysis do
   end
 
   defp processB(server) do
-        
     receive do
       {sender, :start_deq} ->
         log_path = "~/pogger/apps/analysis/lib/traces/test1"
@@ -48,6 +49,7 @@ defmodule Analysis do
         Annotation.annotate_send(msg_id, byte_size(msg_id), %{A: 1, B: 0})
         send(:server, {:deq})
         processB(server)
+
       {sender, val} ->
         Annotation.annotate_receive("b-receive", val, %{A: 1, B: 1})
         Annotation.annotate_start_task("b-incr", %{A: 1, B: 2})
@@ -62,15 +64,19 @@ defmodule Analysis do
   def basic_send_and_receive do
     Emulation.init()
     parent = self()
+    case File.mkdir(Path.expand("~/pogger/apps/analysis/lib/traces/test1")) do
+          _ -> true
+    end
+    case File.mkdir_p(Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")) do
+          _ -> true
+    end
+    
     spawn(:server, fn -> queue_server end)
     spawn(:a, fn -> processA(:server) end)
     spawn(:b, fn -> processB(parent) end)
 
-    receive do 
+    receive do
       true ->
-        case File.mkdir(Path.expand("~/pogger/apps/analysis/lib/traces/test1")) do
-          _ -> true
-        end
         expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test1")
         res = read_expectations_files(expectation_path)
         recognizers = res |> Enum.map(fn rec -> Map.get(rec, :expectation) end)
@@ -78,6 +84,69 @@ defmodule Analysis do
         trace_events = read_trace("test1")
         results = Enum.zip([Enum.reverse(files), check(recognizers, trace_events)])
         IO.puts("#{inspect(results)}")
+    end
+  after
+    Emulation.terminate()
+  end
+
+  defp processC do
+   send(:server, {:deq})
+   receive do
+      {_, :empty} ->
+        log_path = "~/pogger/apps/analysis/lib/traces/test2"
+        Annotation.init("C", log_path)
+        processC()
+      {_, val} ->
+        Annotation.annotate_start_task("c-incr", %{C: 0, D: 0})
+        val = val + 10
+        Annotation.annotate_end_task("c-incr", %{C: 1, D: 0})
+        Annotation.annotate_send("c-enq", val, %{C: 2, D: 0})
+        send(:server, {:enq, val})
+    end
+  end
+
+  defp processD(caller) do
+     send(:server, {:deq})
+     receive do
+      {_, :empty} ->
+        log_path = "~/pogger/apps/analysis/lib/traces/test2"
+        Annotation.init("D", log_path)
+        Annotation.annotate_send("d-enq", 10, %{C: 0, D: 0})
+        send(:server, {:enq, 10})
+        processD(caller)
+      {_, val} ->
+        Annotation.annotate_start_task("d-incr", %{C: 0, D: 1})
+        val = val - 10
+        Annotation.annotate_end_task("d-incr", %{C: 0, D: 2})
+        Annotation.annotate_send("d-enq", val, %{C: 0, D: 3})
+        send(:server, {:enq, val})
+        send(caller, true)
+     end
+  end
+
+  def nonsequentail_send_and_receive do
+    Emulation.init()
+    parent = self()
+    case File.mkdir_p(Path.expand("~/pogger/apps/analysis/lib/traces/test2")) do
+          _ -> true
+    end
+    case File.mkdir_p(Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test2")) do
+          _ -> true
+    end
+    spawn(:server, fn -> queue_server end)
+    spawn(:d, fn -> processD(parent) end)
+    spawn(:c, fn -> processC end)
+
+    receive do
+      true ->
+        expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test2")
+        res = read_expectations_files(expectation_path)
+        recognizers = res |> Enum.map(fn rec -> Map.get(rec, :expectation) end)
+        files = res |> Enum.map(fn rec -> Path.basename(Map.get(rec, :file)) end)
+        trace_events = read_trace("test2")
+        results = Enum.zip([Enum.reverse(files), check(recognizers, trace_events)])
+        IO.puts("#{inspect(results)}")
+        true
     end
   after
     Emulation.terminate()
@@ -126,7 +195,11 @@ defmodule Analysis do
         case File.read(head) do
           {:ok, bin} ->
             recognizer = Validator.to_recognizer(bin)
-            read_expectations_files(tail, [%{expectation: Validator.to_recognizer(bin), file: head}] ++ expectations)
+
+            read_expectations_files(
+              tail,
+              [%{expectation: Validator.to_recognizer(bin), file: head}] ++ expectations
+            )
 
           {:error, reason} ->
             raise "Failed to read files from #{head}. Reason: #{reason}"
