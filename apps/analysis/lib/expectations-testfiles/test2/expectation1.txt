@@ -1,6 +1,20 @@
 Validator(B) {
   process(B) {
-    send(c-enq),
-    send(d-enq)
+    task(server-start) {
+      maybe {
+        send(c-enq)
+      }
+      maybe {
+        send(d-enq)
+      }
+      maybe {
+        receive(c-enq)
+        receive(d-enq)
+      }
+      maybe {
+        receive(d-enq)
+        receive(c-enq)
+      }
+    }
   }
 }
