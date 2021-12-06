@@ -11,4 +11,10 @@ defmodule AnalysisTest do
   test "nonsequentail_send_and_receive" do
     Analysis.nonsequentail_send_and_receive()
   end
+
+@tag disabled: true
+  test "concurrent_send_and_receive" do
+    Analysis.concurrent_send_and_receive()
+  end
+
 end

@@ -186,6 +186,49 @@ defmodule Analysis do
     Emulation.terminate()
   end
 
+  defp processE(caller, time) do
+    log_path = "~/pogger/apps/analysis/lib/traces/test3"
+    me = whoami()
+    Annotation.init("#{me}", log_path)
+    time = update_vector_clock(me, time)
+    Annotation.annotate_send("#{me}-enq", 0, time)
+    send(:server, {{:enq, 1}, time})
+    send(caller, true)
+  end
+
+  def concurrent_send_and_receive do
+    Emulation.init()
+    parent = self()
+    time = %{server: 0, e: 0, f: 0}
+
+    case File.mkdir_p(Path.expand("~/pogger/apps/analysis/lib/traces/test3")) do
+      _ -> true
+    end
+
+    case File.mkdir_p(Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test3")) do
+      _ -> true
+    end
+
+    server_log_path = "~/pogger/apps/analysis/lib/traces/test3"
+
+    spawn(:server, fn -> queue_server(time, server_log_path) end)
+    spawn(:e, fn -> processE(parent, time) end)
+    spawn(:f, fn -> processE(parent, time) end)
+
+    receive do
+      true ->
+        expectation_path = Path.expand("~/pogger/apps/analysis/lib/expectations-testfiles/test3")
+        res = read_expectations_files(expectation_path)
+        recognizers = res |> Enum.map(fn rec -> Map.get(rec, :expectation) end)
+        files = res |> Enum.map(fn rec -> Path.basename(Map.get(rec, :file)) end)
+        trace_events = read_trace("test3")
+        results = Enum.zip([Enum.reverse(files), check(recognizers, trace_events)])
+        IO.puts("#{inspect(results)}")
+    end
+  after
+    Emulation.terminate()
+  end
+
   defp combine_vector_clock(current, received) do
     Map.merge(current, received, fn _k, c, r -> max(c, r) end)
   end
