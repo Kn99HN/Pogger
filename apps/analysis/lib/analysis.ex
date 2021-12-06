@@ -20,26 +20,26 @@ defmodule Analysis do
     me = whoami()
 
     receive do
-      {sender, {{:enq, val}, time_received}} ->
-        time_current = update_vetor_clock(me, time)
-        time = combine_vector_clock(time_current, time_received)
+      {sender, {{:enq, val}, received_time}} ->
+        current_time = update_vector_clock(me, time)
+        time = combine_vector_clock(current_time, received_time)
         Annotation.annotate_receive("#{sender}-enq", 0, time)
         queue_server([val] ++ queue, time, log_path)
 
-      {sender, {{:deq}, time_received}} ->
-        time_current = update_vetor_clock(me, time)
-        time = combine_vector_clock(time_current, time_received)
+      {sender, {{:deq}, received_time}} ->
+        current_time = update_vector_clock(me, time)
+        time = combine_vector_clock(current_time, received_time)
         Annotation.annotate_receive("#{sender}-deq", 0, time)
 
         case queue do
           [] ->
-            time = update_vetor_clock(me, time)
+            time = update_vector_clock(me, time)
             send(sender, {:empty, time})
             Annotation.annotate_send("#{me}-send-empty", 0, time)
             queue_server(queue, time, log_path)
 
           [head | tail] ->
-            time = update_vetor_clock(me, time)
+            time = update_vector_clock(me, time)
             send(sender, {head, time})
             Annotation.annotate_send("#{me}-send-#{head}", 0, time)
             queue_server(tail, time, log_path)
@@ -52,7 +52,7 @@ defmodule Analysis do
     me = whoami()
     Annotation.init("A", log_path)
     msg_id = "a-enq"
-    time = update_vetor_clock(me, time)
+    time = update_vector_clock(me, time)
     Annotation.annotate_send(msg_id, byte_size(msg_id), time)
     send(:server, {{:enq, 1}, time})
     send(:b, {:start_deq, time})
@@ -62,26 +62,26 @@ defmodule Analysis do
     me = whoami()
 
     receive do
-      {sender, {:start_deq, time_received}} ->
+      {sender, {:start_deq, received_time}} ->
         log_path = "~/pogger/apps/analysis/lib/traces/test1"
         Annotation.init("B", log_path)
         msg_id = "b-deq"
-        time_current = update_vetor_clock(me, time)
-        time = combine_vector_clock(time_current, time_received)
+        current_time = update_vector_clock(me, time)
+        time = combine_vector_clock(current_time, received_time)
         Annotation.annotate_send(msg_id, byte_size(msg_id), time)
         send(:server, {{:deq}, time})
         processB(server, time)
 
-      {sender, {val, time_received}} ->
-        time_current = update_vetor_clock(me, time)
-        time = combine_vector_clock(time_current, time_received)
+      {sender, {val, received_time}} ->
+        current_time = update_vector_clock(me, time)
+        time = combine_vector_clock(current_time, received_time)
         Annotation.annotate_receive("b-receive", val, time)
-        time = update_vetor_clock(me, time)
+        time = update_vector_clock(me, time)
         Annotation.annotate_start_task("b-incr", time)
         val = val + 1
-        time = update_vetor_clock(me, time)
+        time = update_vector_clock(me, time)
         Annotation.annotate_end_task("b-incr", time)
-        time = update_vetor_clock(me, time)
+        time = update_vector_clock(me, time)
         Annotation.annotate_send("b-update", val, time)
         send(:server, {{:enq, val}, time})
         send(server, true)
@@ -125,19 +125,32 @@ defmodule Analysis do
     log_path = "~/pogger/apps/analysis/lib/traces/test2"
     Annotation.init("C", log_path)
     me = whoami()
-    time = update_vetor_clock(me, time)
+    time = update_vector_clock(me, time)
     Annotation.annotate_send("c-enq", 0, time)
     send(:server, {{:enq, 1}, time})
   end
 
   defp processD(caller, time) do
-    log_path = "~/pogger/apps/analysis/lib/traces/test2"
-    Annotation.init("D", log_path)
     me = whoami()
-    time = update_vetor_clock(me, time)
-    Annotation.annotate_send("d-enq", 0, time)
-    send(:server, {{:enq, 2}, time})
-    send(caller, true)
+    time = update_vector_clock(me, time)
+    send(:server, {{:deq}, time})
+    receive do 
+      {_, {:empty, received_time}} ->
+        log_path = "~/pogger/apps/analysis/lib/traces/test2"
+        Annotation.init("D", log_path)
+        time = combine_vector_clock(received_time, time)
+        processD(caller, time)
+      {_, {val, received_time}} ->
+        current_time = update_vector_clock(me, time)
+        time = combine_vector_clock(received_time, current_time)
+        Annotation.annotate_start_task("d-incr", time)
+        val = val + 10
+        Annotation.annotate_end_task("d-incr", time)
+        time = update_vector_clock(me, time)
+        Annotation.annotate_send("d-enq", 0, time)
+        send(:server, {{:enq, val}, time})
+        send(caller, true)
+    end
   end
 
   def nonsequentail_send_and_receive do
@@ -166,10 +179,8 @@ defmodule Analysis do
         recognizers = res |> Enum.map(fn rec -> Map.get(rec, :expectation) end)
         files = res |> Enum.map(fn rec -> Path.basename(Map.get(rec, :file)) end)
         trace_events = read_trace("test2")
-
         results = Enum.zip([Enum.reverse(files), check(recognizers, trace_events)])
         IO.puts("#{inspect(results)}")
-        true
     end
   after
     Emulation.terminate()
@@ -179,7 +190,7 @@ defmodule Analysis do
     Map.merge(current, received, fn _k, c, r -> max(c, r) end)
   end
 
-  defp update_vetor_clock(process, time) do
+  defp update_vector_clock(process, time) do
     Map.update(time, process, 0, fn c -> c + 1 end)
   end
 
