@@ -109,4 +109,24 @@ defmodule RecognizerTest do
 
     assert res1 == target1
   end
+
+  test "recognizer with send" do
+    str1 = "
+    Validator(A) {
+      process(A) {
+        send(a-enq);
+      },
+      process(B) {
+        notice(b-deq),
+        notice(b-receive),
+        task(b-incr) {
+          send(b-update);
+        }
+      }
+    }"
+
+    res1 = Validator.to_recognizer(str1)
+
+    IO.puts("#{inspect(res1)}")
+  end
 end

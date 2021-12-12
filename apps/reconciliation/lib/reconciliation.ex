@@ -6,20 +6,22 @@ defmodule Reconciliation do
 
   @spec combine_trace(String.t()) :: [%Reconciliation.Event{}]
   def combine_trace(file_path) do
-    case File.ls(file_path) do
+    abs_path = Path.expand(file_path)
+    case File.ls(abs_path) do
       {:ok, files} ->
         files
         |> Enum.filter(fn x -> !String.starts_with?(x, ".") end)
-        |> Enum.flat_map(fn x -> parse_file(file_path, x) end)
+        |> Enum.flat_map(fn x -> parse_file(abs_path, x) end)
 
       {:error, reason} ->
-        IO.puts("Unable to locate the trace files with error #{reason}")
+        IO.puts("Unable to locate the trace files at #{inspect(file_path)} with error #{reason}")
     end
   end
 
   @spec parse_file(String.t(), String.t()) :: [%Reconciliation.Event{}]
   defp parse_file(file_path, file_name) do
-    case File.read("#{file_path}/#{file_name}") do
+    abs_path = Path.expand("#{file_path}/#{file_name}")
+    case File.read(abs_path) do
       {:ok, f_content} ->
         case Jason.decode(f_content) do
           {:ok, file_content} ->
@@ -94,7 +96,6 @@ defmodule Reconciliation do
     v2 = make_vectors_equal_length(v2, v1)
 
     compare_result = Map.values(Map.merge(v1, v2, fn _k, c1, c2 -> compare_component(c1, c2) end))
-
     cond do
       Enum.any?(compare_result, fn x -> x == @before end) &&
           Enum.any?(compare_result, fn x -> x == @hafter end) ->
@@ -105,6 +106,9 @@ defmodule Reconciliation do
 
       Enum.any?(compare_result, fn x -> x == @hafter end) ->
         @hafter
+      
+      Enum.all?(compare_result, fn x -> x == @concurrent end) ->
+        @concurrent
     end
   end
 

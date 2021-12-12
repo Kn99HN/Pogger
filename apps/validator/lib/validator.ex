@@ -176,6 +176,10 @@ defmodule Validator do
               String.starts_with?(head, "receive") ->
                 receive = parse_receive(head)
                 [receive] ++ parse_tokens(tail, expectations)
+
+              String.starts_with?(head, "task") ->
+                task = parse_task(head)
+                [task] ++ parse_tokens(tail, expectations)
             end
 
           [] ->

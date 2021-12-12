@@ -27,7 +27,7 @@ defmodule Checker do
                                   event_type: event_type,
                                   path_id: pathid
                                 } ->
-                event_type == :notice && pathid == pattern
+                event_type == :notice && String.match?(pathid, ~r/#{pattern}/)
               end)
 
             # At lease one of the route can match between expectation and trace
@@ -47,11 +47,13 @@ defmodule Checker do
                                   path_id: _pathid
                                 } ->
                 event_type == :message && Map.fetch!(detail, "message_type") == "send" &&
-                  Map.fetch!(detail, "message_id") == name
+                  String.match?(Map.fetch!(detail, "message_id"), ~r/#{name}/)
               end)
 
             if length(matching_events) > 0 do
-              Enum.map(matching_events, fn e -> is_valid(tail, e, g) end)
+              Enum.map(matching_events, fn e ->
+                is_valid(tail, e, g)
+              end)
               |> Enum.any?()
             else
               false
@@ -66,7 +68,7 @@ defmodule Checker do
                                   path_id: _pathid
                                 } ->
                 event_type == :message && Map.fetch!(detail, "message_type") == "receive" &&
-                  Map.fetch!(detail, "message_id") == name
+                  String.match?(Map.fetch!(detail, "message_id"), ~r/#{name}/)
               end)
 
             if length(matching_events) > 0 do
@@ -84,7 +86,7 @@ defmodule Checker do
                                   event_type: event_type,
                                   path_id: _pathid
                                 } ->
-                event_type == :task && Map.fetch!(detail, "name") == name
+                event_type == :task && String.match?(Map.fetch!(detail, "name"), ~r/#{name}/)
               end)
 
             if length(matching_events) > 0 do

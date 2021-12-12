@@ -1,0 +1,10 @@
+Validator(B) {
+  process(B) {
+    task(server-start) {
+      send(c-enq),
+      receive(c-enq),
+      send(d-enq),
+      receive(d-enq)
+    }
+  }
+}

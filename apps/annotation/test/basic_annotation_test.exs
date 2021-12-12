@@ -7,19 +7,19 @@ defmodule BasicAnnotationTest do
   import Emulation, only: [spawn: 2, send: 2]
 
   def basic_trace_with_task_annotation do
-    Annotation.init("a")
+    Annotation.init("a", nil)
     Annotation.annotate_start_task("1+1", 0)
     _x = 1 + 1
     Annotation.annotate_end_task("1+1", 0)
   end
 
   def basic_trace_with_notice_annotation do
-    Annotation.init("b")
+    Annotation.init("b", nil)
     Annotation.annotate_notice("Starting process b", 0)
   end
 
   def basic_trace_with_send_and_receive_annotation(caller) do
-    Annotation.init("c")
+    Annotation.init("c", nil)
     msg = "Hello world!"
     Annotation.annotate_send("c:send", byte_size(msg), 1)
     send(self(), msg)

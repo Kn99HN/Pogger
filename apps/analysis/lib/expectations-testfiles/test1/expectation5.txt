@@ -1,0 +1,15 @@
+validator(A) {
+  process(A) {
+    task("a-incr");
+    repeat between 1 and 3 {
+      send("a-enq")
+    },
+    send("b-deq"),
+    task("b-incr") {
+      send("b-update"),
+      send("b-remove"),
+      send("b-update"),
+    },
+    receive("b-receive");
+  }
+}

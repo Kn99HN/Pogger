@@ -5,6 +5,7 @@ defmodule Annotation.Path do
   @enfore_keys [:path_id]
   defstruct(
     path_id: nil,
+    log_path: nil,
     events: []
   )
 

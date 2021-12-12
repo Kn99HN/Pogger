@@ -7,7 +7,7 @@ defmodule Annotation do
   """
   
   
-  def init(path_id) do
+  def init(path_id, log_path) do
     context_name = whoami()
     try do
       Agent.stop(context_name)
@@ -15,7 +15,8 @@ defmodule Annotation do
       :exit, _ -> true
     end
     Agent.start_link(fn -> %Annotation.Path{ 
-      path_id: path_id
+      path_id: path_id,
+      log_path: log_path
     } end, name: context_name)
   end
 
@@ -93,7 +94,7 @@ defmodule Annotation do
     output()
   end
 
-  defp output() do
+  defp output do
     file = get_file_path()
     path = Agent.get(whoami(), fn path -> path end)
     path_id = Map.get(path, :path_id)
@@ -102,28 +103,33 @@ defmodule Annotation do
       nil -> IO.puts("#{inspect(json_path)}")
       fname ->
         full_fname = "#{fname}/#{path_id}"
-        case File.touch!(full_fname) do
+        abs_path = Path.expand(full_fname)
+        case File.touch!(abs_path) do
           :ok ->
-            {:ok, file} = File.open(full_fname, [:write])
+            {:ok, file} = File.open(abs_path, [:write])
             IO.binwrite(file, json_path)
             File.close(file)
         end
     end
   end
 
-  defp read_from_file() do
+  defp read_from_file do
     file = get_file_path()
     path_id = get_path_id()
     if file != nil do
       full_fname = "#{file}/#{path_id}"
-      {:ok, path} = File.read(full_fname)
+      abs_path = Path.expand(full_fname)
+      {:ok, path} = File.read(abs_path)
       decoded_path = Jason.decode!(path)
       IO.puts("#{inspect(decoded_path)}")
     end
   end
 
-  defp get_file_path() do
-    System.get_env("TRACE_FILES")
+  defp get_file_path do
+    case Agent.get(whoami(), fn path -> Map.get(path, :log_path) end) do
+      nil -> System.get_env("TRACE_FILES")
+      output_path -> output_path
+    end
   end
 
   defp get_timestamp(clock_value) do
